@@ -12,10 +12,13 @@ namespace PancakeOrdering.Core.Domain.Orders
 
         private Order(DeliveryAddress deliveryAddress)
         {
+            OrderId = Guid.NewGuid();
             CurrentState = DraftState.Instance;
             _pancakes = new List<Pancake>();
             DeliveryAddress = deliveryAddress;
         }
+
+        public Guid OrderId { get; }
 
         public IOrderState CurrentState { get; private set; }
 
@@ -103,8 +106,7 @@ namespace PancakeOrdering.Core.Domain.Orders
             return Result.Success();
         }
 
-
-
+        
         public Result Confirm()             => TryTransition(OrderAction.Confirm);
         public Result StartPreparation()    => TryTransition(OrderAction.StartPreparation);
         public Result CompletePreparation() => TryTransition(OrderAction.CompletePreparation);
@@ -113,20 +115,37 @@ namespace PancakeOrdering.Core.Domain.Orders
         public Result Archive()             => TryTransition(OrderAction.Archive);
         public Result Cancel()              => TryTransition(OrderAction.Cancel);
 
+        internal Result ValidateConfirmation() => ValidateTransition(OrderAction.Confirm, out _);
 
         private Result TryTransition(OrderAction action)
         {
-            if (!OrderStateTransitions.TryResolve(CurrentState.Status, action, out var nextState))
-                return Result.Failure(ErrorCode.InvalidTransition);
-
-            var entryResult = nextState.ValidateEntry(this);
-            if (!entryResult.IsSuccess)
-                return entryResult;
+            var validationResult = ValidateTransition(action, out var nextState);
+            if (!validationResult.IsSuccess)
+                return validationResult;
 
             CurrentState.OnExit(this);
-            CurrentState = nextState;
+            CurrentState = nextState!;
             CurrentState.OnEnter(this);
 
+            return Result.Success();
+        }
+
+        private Result ValidateTransition(OrderAction action, out IOrderState? nextState)
+        {
+            if (!OrderStateTransitions.TryResolve(CurrentState.Status, action, out var resolvedState))
+            {
+                nextState = null;
+                return Result.Failure(ErrorCode.InvalidTransition);
+            }
+
+            var entryResult = resolvedState.ValidateEntry(this);
+            if (!entryResult.IsSuccess)
+            {
+                nextState = null;
+                return entryResult;
+            }
+
+            nextState = resolvedState;
             return Result.Success();
         }
 

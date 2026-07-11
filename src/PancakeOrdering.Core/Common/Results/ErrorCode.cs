@@ -11,6 +11,8 @@
         DuplicateIngredientAdded,
         IngredientNotFound,
         InvalidDeliveryAddress,
-        CannotChangeAddressInCurrentState
+        CannotChangeAddressInCurrentState,
+        OrderNotFound,
+        KitchenDeclined
     }
 }

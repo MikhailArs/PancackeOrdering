@@ -20,4 +20,8 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PancakeOrdering.Core\PancakeOrdering.Core.csproj" />
+  </ItemGroup>
+
 </Project>
