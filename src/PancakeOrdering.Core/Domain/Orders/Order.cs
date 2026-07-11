@@ -32,7 +32,7 @@ namespace PancakeOrdering.Core.Domain.Orders
         public Result<int> AddPancake(HashSet<Ingredient>? ingredients)
         {
             if (!CurrentState.CanModifyPancakes)
-                return Result.Failure(ErrorCode.CannotAddOrRemovePancakeInCurrentState);
+                return Result.Failure<int>(ErrorCode.CannotAddOrRemovePancakeInCurrentState);
 
             var pancake = ingredients == null ? new Pancake(GetNextPancakeId()) : new Pancake(GetNextPancakeId(), ingredients);
 
@@ -58,7 +58,29 @@ namespace PancakeOrdering.Core.Domain.Orders
             return Result.Success();
         }
 
+        public Result AddIngredient(int pancakeId, Ingredient ingredient)
+        {
+            if (!CurrentState.CanModifyPancakes)
+                return Result.Failure(ErrorCode.CannotAddOrRemovePancakeInCurrentState);
 
+            var pancake = _pancakes.FirstOrDefault(a => a.Id == pancakeId);
+            if (pancake == null)
+                return Result.Failure(ErrorCode.NoPancakeFound);
+
+            return pancake.AddIngredient(ingredient);
+        }
+
+        public Result RemoveIngredient(int pancakeId, Ingredient ingredient)
+        {
+            if (!CurrentState.CanModifyPancakes)
+                return Result.Failure(ErrorCode.CannotAddOrRemovePancakeInCurrentState);
+
+            var pancake = _pancakes.FirstOrDefault(a => a.Id == pancakeId);
+            if (pancake == null)
+                return Result.Failure(ErrorCode.NoPancakeFound);
+
+            return pancake.RemoveIngredient(ingredient);
+        }
 
 
         public Result Confirm()

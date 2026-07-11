@@ -8,6 +8,7 @@
         NoPancakesToRemove,
         NoPancakeFound,
         CannotAddOrRemovePancakeInCurrentState,
-        DuplicateIngredientAdded
+        DuplicateIngredientAdded,
+        IngredientNotFound
     }
 }
