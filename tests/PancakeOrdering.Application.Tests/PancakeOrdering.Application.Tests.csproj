@@ -21,6 +21,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\PancakeOrdering.Application\PancakeOrdering.Application.csproj" />
+    <ProjectReference Include="..\..\src\PancakeOrdering.Contracts\PancakeOrdering.Contracts.csproj" />
     <ProjectReference Include="..\..\src\PancakeOrdering.Core\PancakeOrdering.Core.csproj" />
   </ItemGroup>
 

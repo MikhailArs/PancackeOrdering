@@ -6,11 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Application\Commands\" />
-    <Folder Include="Application\Handlers\" />
-    <Folder Include="Application\Dispatching\" />
-    <Folder Include="Application\Ports\" />
-  </ItemGroup>
-
 </Project>

@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
-using PancakeOrdering.Core.Application;
-using PancakeOrdering.Core.Application.Ports;
+using PancakeOrdering.Application;
+using PancakeOrdering.Application.Ports;
 using PancakeOrdering.Core.Common.Results;
 using PancakeOrdering.Core.Domain.Enums;
 using PancakeOrdering.Core.Domain.Orders;
@@ -12,6 +12,7 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(3);
 
         [Test]
+        [Property("Requirement", "FR-1")]
         public void CreateOrder_ReturnsStableNonEmptyUniqueIds()
         {
             var service = CreateService();
@@ -27,6 +28,7 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "NFR-4")]
         public async Task Command_WithUnknownOrder_ReturnsOrderNotFound()
         {
             var service = CreateService();
@@ -38,6 +40,8 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "FR-3")]
+        [Property("Requirement", "FR-4")]
         public async Task Confirm_WhenKitchenAccepts_ConfirmsOrder()
         {
             var kitchen = new KitchenGatewayFake();
@@ -54,6 +58,7 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "FR-3")]
         public async Task Confirm_WhenDraftOrderIsEmpty_DoesNotCallKitchen()
         {
             var kitchen = new KitchenGatewayFake();
@@ -70,6 +75,8 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "FR-3")]
+        [Property("Requirement", "FR-4")]
         public async Task Confirm_WhenKitchenDeclines_KeepsOrderDraft()
         {
             var kitchen = new KitchenGatewayFake(_ => Task.FromResult(Result.Failure(ErrorCode.KitchenDeclined)));
@@ -132,6 +139,7 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "FR-5")]
         public async Task CompletePreparation_WhenValid_SubmitsOrderToDelivery()
         {
             var delivery = new DeliveryGatewayFake();
@@ -148,6 +156,7 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "FR-5")]
         public async Task CompletePreparation_WhenTransitionIsInvalid_DoesNotCallDelivery()
         {
             var delivery = new DeliveryGatewayFake();
@@ -182,6 +191,8 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "FR-5")]
+        [Property("Requirement", "NFR-5")]
         public async Task CompletePreparation_WaitsForDeliverySubmissionBeforeNextOrderCommand()
         {
             var delivery = new ControlledDeliveryGateway();
@@ -328,6 +339,7 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "NFR-5")]
         public async Task SameOrder_WaitsForCompletePreviousCommandIncludingKitchen()
         {
             var kitchen = new ControlledKitchenGateway();
@@ -357,6 +369,7 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "NFR-5")]
         public async Task DifferentOrders_ExecuteConcurrently()
         {
             var kitchen = new ControlledKitchenGateway();
@@ -390,6 +403,7 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "NFR-5")]
         public async Task CompetingCustomerAndKitchenCommands_FollowEnqueueOrder()
         {
             var service = CreateService();

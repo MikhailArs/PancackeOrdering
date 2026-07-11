@@ -1,7 +1,7 @@
-﻿namespace PancakeOrdering.Contracts.Dtos;
+namespace PancakeOrdering.Contracts.Dtos;
 
 public sealed record OrderDto(
     Guid OrderId,
-    string Status,
-    DeliveryAddressDto Address,
+    OrderStatusDto Status,
+    DeliveryAddressDto DeliveryAddress,
     IReadOnlyList<PancakeDto> Pancakes);

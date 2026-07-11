@@ -1,7 +1,7 @@
 using System.Threading.Channels;
 using PancakeOrdering.Core.Common.Results;
 
-namespace PancakeOrdering.Core.Application.Dispatching
+namespace PancakeOrdering.Application.Dispatching
 {
     internal sealed class PerOrderCommandQueue
     {

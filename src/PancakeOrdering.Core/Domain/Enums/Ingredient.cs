@@ -1,6 +1,6 @@
 ﻿namespace PancakeOrdering.Core.Domain.Enums;
 
-public enum Ingredient
+internal enum Ingredient
 {
     Honey,
     Jam,

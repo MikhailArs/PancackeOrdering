@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using PancakeOrdering.Core.Application.Dispatching;
+using PancakeOrdering.Application.Dispatching;
 using PancakeOrdering.Core.Common.Results;
 
 namespace PancakeOrdering.Application.Tests.Application.Dispatching
@@ -9,6 +9,7 @@ namespace PancakeOrdering.Application.Tests.Application.Dispatching
         private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(3);
 
         [Test]
+        [Property("Requirement", "NFR-5")]
         public async Task EnqueueAsync_ExecutesOperationsInFifoOrder()
         {
             var queue = new PerOrderCommandQueue();
@@ -61,6 +62,8 @@ namespace PancakeOrdering.Application.Tests.Application.Dispatching
         }
 
         [Test]
+        [Property("Requirement", "NFR-4")]
+        [Property("Requirement", "NFR-5")]
         public async Task EnqueueAsync_ExceptionDuringFirstTask_ReturnsInternalErrorAndSecondContinues()
         {
             var queue = new PerOrderCommandQueue();

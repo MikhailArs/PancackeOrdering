@@ -1,8 +1,8 @@
 using PancakeOrdering.Core.Common.Results;
 
-namespace PancakeOrdering.Core.Application.Ports
+namespace PancakeOrdering.Application.Ports
 {
-    internal interface IKitchenGateway
+    public interface IKitchenGateway
     {
         Task<Result> AcceptOrderAsync(Guid orderId);
     }

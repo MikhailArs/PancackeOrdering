@@ -12,9 +12,11 @@ Using existing API application should be maintanable and allow easy integration 
 SDD-2. Architectural Overview.
 The solution follows a Clean Architecture structure:
 
-- Contracts defines the public API models, requests, responses, DTOs, and Result<T>.
-- Core contains the Domain and Application logic.
-- Infrastructure implements repositories and external-system ports.
+- Contracts defines the public API models, requests, DTOs, public enums, OperationResult<T>, and OperationErrorCode.
+- Core contains Domain logic only and has no reference to Contracts or Application.
+- Application references Contracts and Core. It owns use cases, per-order command queues, ports, the public method-call facade, and mapping between Contracts and Domain.
+- Infrastructure may implement Application ports later.
+- Host may act as the composition root later.
 - Tests verify domain rules, application flows, and concurrency behavior.
 - Demo may provide a simple executable example of the service.
 
@@ -29,31 +31,62 @@ SDD-3.2 Pancake - an entity identified by PancakeId and contains its selected in
 Contains:
 - PancakeId is unique within its containing Order
 - Collection of Ingredients
-SDD-3.3 Ingredient - an entity that can be added to Pancake
-Contains:
-- IngredientId
-- Ingredient Name
-- Ingredient Description
+SDD-3.3 Ingredient is a supported ingredient type represented by an enum.
+The currently supported values are:
+- Honey
+- Jam
+- Chocolate
+
+A Pancake may contain no additional ingredients.
+Each ingredient type may occur at most once in a Pancake.
+Ingredient stock and availability are separate Kitchen/Application concerns.
+Stock quantities are not stored in Ingredient, Pancake, or Order.
 
 SDD-4. Public API Design
 SDD-4.1 The Public API exposes application use cases without exposing Domain or Infrastructure types.
 It contains only:
 - Request models
-- Response models
 - DTOs
 - Public identifiers
-- Result<T>
+- Public enums
+- OperationErrorCode
+- OperationResult<T>
 SDD-4.2 Each API operation represents a clear business action.
 Operations may be initiated by:
 - A customer, for example creating, modifying, confirming, or cancelling an order.
 - An external system, for example the Kitchen starting order preparation or the Delivery service updating delivery progress.
 SDD-4.3 Application should not allow to change state directly, only API actions are allowed. All commands for the same order are submitted to an in-memory per-order queue and processed sequentially. 
 SDD-4.4 Requests are validated at the API boundary before being passed to the Application layer. Business-rule and state-transition validation remains inside the Domain.
-SDD-4.5 All operations return Result<T>:
-- Success contains the requested response or DTO.
-- Failure contains a stable error code and a readable message.
+SDD-4.5 All operations return OperationResult<T>:
+- Success contains the requested DTO.
+- Failure contains a stable public OperationErrorCode.
 SDD-4.6 Domain and Infrastructure exceptions are not exposed to API consumers.
-SDD-4.7 API models are mapped to and from Domain objects, keeping contract unchanged and keeping domain elements inside Application.
+SDD-4.7 API models are mapped to and from Domain objects inside Application.
+Contracts and Core do not reference each other.
+
+SDD-4.8 The public C# method-call API is represented by IPancakeOrderingService in Contracts.
+It exposes Customer operations:
+- CreateOrder
+- GetOrder
+- ChangeDeliveryAddressAsync
+- AddPancakeAsync
+- RemovePancakeAsync
+- AddIngredientAsync
+- RemoveIngredientAsync
+- ConfirmOrderAsync
+- CancelOrderAsync
+
+SDD-4.9 Public callers use only request models, DTOs, primitive identifiers, public enums, OperationResult/OperationResult<T>, and OperationErrorCode from Contracts.
+Domain objects such as Order, Pancake, DeliveryAddress, Ingredient, and state types do not leave Core.
+
+SDD-4.10 Application maps Core Result and Core ErrorCode to Contracts OperationResult and OperationErrorCode explicitly.
+The two result models are intentionally separate because they belong to different architectural boundaries.
+
+SDD-4.11 OrderDto is a detached projection of an immutable internal Order snapshot containing OrderId, Status, DeliveryAddress, and Pancakes.
+Customer commands are routed through the existing per-order command queue before returning an updated OrderDto.
+Queued commands operate on the mutable Order aggregate and publish a complete immutable snapshot before the queued command completes.
+GetOrder is synchronous, is not queued, reads only the current immutable snapshot, and returns the last completely published OrderDto.
+In-progress command state is not exposed to queries.
 
 SDD-5. Order Lifecycle Design
 SDD-5.1 The order lifecycle is implemented using a lightweight State Pattern (see SDD-7. Trade-offs and Alternatives).
@@ -72,9 +105,11 @@ SDD-6.4 A command remains inside the queue until all related processing is compl
 - Validating
 - Calling required external systems
 - Applying the state transition
-- Persisting the updated order
+- Publishing a complete immutable Order snapshot
 - Returning the result
 Only then may the next command for the same order begin and validation will be performed vs updated state.
+Snapshot publication replaces the whole immutable snapshot reference.
+If a command mutates the Order and later returns a failure from an external boundary, the published snapshot still reflects the actual completed Aggregate state.
 SDD-6.5 Commands for different orders use different queues and may execute concurrently.
 SDD-6.6 The Order aggregate contains no locking or thread-synchronization logic.
 
