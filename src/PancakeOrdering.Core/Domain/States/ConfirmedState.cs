@@ -21,10 +21,15 @@ namespace PancakeOrdering.Core.Domain.States
 
         public override Result ValidateEntry(Order order)
         {
-            return order.Pancakes.Length > 0
-                ? Result.Success()
-                : Result.Failure(
-                    ErrorCode.OrderMustContainPancake);
+            if (order.Pancakes.Length > 0)
+            {
+                return Result.Success();
+            }
+            else
+            {
+                // TODO[Mik]: Log to be added (order.Pancakes.Length)
+                return Result.Failure(ErrorCode.OrderMustContainPancake);
+            }
         }
     }
 }

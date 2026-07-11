@@ -10,8 +10,6 @@
 
         public bool IsSuccess { get; }
 
-        public bool IsFailure => !IsSuccess;
-
         public ErrorCode? Error { get; }
 
         public static Result Success()

@@ -12,7 +12,6 @@
     <Folder Include="Application\Dispatching\" />
     <Folder Include="Application\Ports\" />
     <Folder Include="Domain\Ingredients\" />
-    <Folder Include="Domain\Pancakes\" />
   </ItemGroup>
 
 </Project>

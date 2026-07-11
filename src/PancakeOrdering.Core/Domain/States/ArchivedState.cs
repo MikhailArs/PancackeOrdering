@@ -21,9 +21,13 @@ namespace PancakeOrdering.Core.Domain.States
 
         public override Result ValidateEntry(Order order)
         {
-            return order.CurrentState.Status == OrderStatus.Delivered
-                ? Result.Success()
-                : Result.Failure(ErrorCode.InvalidTransition);
+            if (order.CurrentState.Status == OrderStatus.Delivered)
+                return Result.Success();
+            else
+            {
+                // TODO[Mik]: Log to be added (order.CurrentState.Status)
+                return Result.Failure(ErrorCode.InvalidTransition);
+            }
         }
 
         public override void OnEnter(Order order)

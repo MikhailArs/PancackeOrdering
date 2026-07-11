@@ -6,7 +6,6 @@ namespace PancakeOrdering.Core.Domain.States
 {
     internal class CancelledState : StateBase
     {
-
         public static CancelledState Instance { get; } = new();
 
         private CancelledState()
@@ -23,9 +22,13 @@ namespace PancakeOrdering.Core.Domain.States
 
         public override Result ValidateEntry(Order order)
         {
-            return order.CurrentState.Status == OrderStatus.Draft || order.CurrentState.Status == OrderStatus.Confirmed
-                ? Result.Success()
-                : Result.Failure(ErrorCode.InvalidTransition);
+            if (order.CurrentState.Status == OrderStatus.Draft || order.CurrentState.Status == OrderStatus.Confirmed)
+                return Result.Success();
+            else
+            {
+                // TODO[Mik]: Log to be added (order.CurrentState.Status)
+                return Result.Failure(ErrorCode.InvalidTransition);
+            }
         }
     }
 }
