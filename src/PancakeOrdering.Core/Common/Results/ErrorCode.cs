@@ -6,13 +6,15 @@
         InvalidTransition,
         OrderMustContainPancake,
         NoPancakesToRemove,
-        NoPancakeFound,
+        PancakeNotFound,
         CannotAddOrRemovePancakeInCurrentState,
         DuplicateIngredientAdded,
         IngredientNotFound,
         InvalidDeliveryAddress,
         CannotChangeAddressInCurrentState,
         OrderNotFound,
-        KitchenDeclined
+        KitchenDeclined,
+        DeliveryFailed,
+        ArchiveFailed
     }
 }

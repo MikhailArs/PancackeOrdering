@@ -10,11 +10,18 @@ namespace PancakeOrdering.Core.Application
     internal sealed class OrderApplicationService
     {
         private readonly IKitchenGateway _kitchenGateway;
+        private readonly IDeliveryGateway _deliveryGateway;
+        private readonly IArchiveGateway _archiveGateway;
         private readonly ConcurrentDictionary<Guid, StoredOrder> _orders = new();
 
-        public OrderApplicationService(IKitchenGateway kitchenGateway)
+        public OrderApplicationService(
+            IKitchenGateway kitchenGateway,
+            IDeliveryGateway deliveryGateway,
+            IArchiveGateway archiveGateway)
         {
             _kitchenGateway = kitchenGateway;
+            _deliveryGateway = deliveryGateway;
+            _archiveGateway = archiveGateway;
         }
 
         public Result<Guid> CreateOrder(DeliveryAddress deliveryAddress)
@@ -32,8 +39,6 @@ namespace PancakeOrdering.Core.Application
 
         public Task<Result<int>> AddPancakeAsync(Guid orderId, Ingredient ingredient) =>
             EnqueueAsync(orderId, order => Task.FromResult(order.AddPancake(ingredient)));
-
-
 
         public Task<Result> ConfirmAsync(Guid orderId) =>
             EnqueueAsync(orderId, async order =>
@@ -56,7 +61,14 @@ namespace PancakeOrdering.Core.Application
             EnqueueAsync(orderId, order => Task.FromResult(order.StartPreparation()));
 
         public Task<Result> CompletePreparationAsync(Guid orderId) =>
-            EnqueueAsync(orderId, order => Task.FromResult(order.CompletePreparation()));
+            EnqueueAsync(orderId, async order =>
+            {
+                var preparationResult = order.CompletePreparation();
+                if (!preparationResult.IsSuccess)
+                    return preparationResult;
+
+                return await _deliveryGateway.SubmitOrderAsync(orderId);
+            });
 
         public Task<Result> StartDeliveryAsync(Guid orderId) =>
             EnqueueAsync(orderId, order => Task.FromResult(order.StartDelivery()));
@@ -65,9 +77,25 @@ namespace PancakeOrdering.Core.Application
             EnqueueAsync(orderId, order => Task.FromResult(order.CompleteDelivery()));
 
         public Task<Result> ArchiveAsync(Guid orderId) =>
-            EnqueueAsync(orderId, order => Task.FromResult(order.Archive()));
+            EnqueueAsync(orderId, async order =>
+            {
+                var validationResult = order.ValidateArchiving();
+                if (!validationResult.IsSuccess)
+                    return validationResult;
 
+                var archiveResult = await _archiveGateway.ArchiveOrderAsync(orderId);
+                if (!archiveResult.IsSuccess)
+                    return archiveResult;
 
+                return order.Archive();
+            });
+
+        public Result<OrderStatus> GetStatus(Guid orderId)
+        {
+            return TryGetStoredOrder(orderId, out var storedOrder)
+                ? Result.Success(storedOrder.Order.Status)
+                : Result.Failure<OrderStatus>(ErrorCode.OrderNotFound);
+        }
 
         private Task<Result> EnqueueAsync(Guid orderId, Func<Order, Task<Result>> operation)
         {

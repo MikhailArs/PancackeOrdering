@@ -86,9 +86,18 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("Requirement", "FR-1")]
+        [Property("Requirement", "FR-3")]
+        [Property("Requirement", "FR-4")]
+        [Property("Requirement", "FR-5")]
+        [Property("Requirement", "FR-6")]
+        [Property("Requirement", "NFR-5")]
         public async Task MainLifecycle_WithAcceptedKitchen_ReachesArchived()
         {
-            var service = CreateService();
+            var kitchen = new KitchenGatewayFake();
+            var delivery = new DeliveryGatewayFake();
+            var archive = new ArchiveGatewayFake();
+            var service = CreateService(kitchen, delivery, archive);
             var orderId = CreateOrder(service);
 
             var addPancakeResult = await service.AddPancakeAsync(orderId, Ingredient.Honey);
@@ -97,7 +106,9 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             var completePreparationResult = await service.CompletePreparationAsync(orderId);
             var startDeliveryResult = await service.StartDeliveryAsync(orderId);
             var completeDeliveryResult = await service.CompleteDeliveryAsync(orderId);
+            var deliveredStatus = service.GetStatus(orderId);
             var archiveResult = await service.ArchiveAsync(orderId);
+            var archivedStatus = service.GetStatus(orderId);
             var cancelResult = await service.CancelAsync(orderId);
 
             Assert.That(addPancakeResult.IsSuccess, Is.True);
@@ -106,9 +117,214 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             Assert.That(completePreparationResult.IsSuccess, Is.True);
             Assert.That(startDeliveryResult.IsSuccess, Is.True);
             Assert.That(completeDeliveryResult.IsSuccess, Is.True);
+            Assert.That(kitchen.CallCount, Is.EqualTo(1));
+            Assert.That(delivery.CallCount, Is.EqualTo(1));
+            Assert.That(delivery.OrderIds, Is.EqualTo(new[] { orderId }));
+            Assert.That(deliveredStatus.IsSuccess, Is.True);
+            Assert.That(deliveredStatus.Value, Is.EqualTo(OrderStatus.Delivered));
+            Assert.That(archive.CallCount, Is.EqualTo(1));
+            Assert.That(archive.OrderIds, Is.EqualTo(new[] { orderId }));
             Assert.That(archiveResult.IsSuccess, Is.True);
+            Assert.That(archivedStatus.IsSuccess, Is.True);
+            Assert.That(archivedStatus.Value, Is.EqualTo(OrderStatus.Archived));
             Assert.That(cancelResult.IsSuccess, Is.False);
             Assert.That(cancelResult.Error, Is.EqualTo(ErrorCode.InvalidTransition));
+        }
+
+        [Test]
+        public async Task CompletePreparation_WhenValid_SubmitsOrderToDelivery()
+        {
+            var delivery = new DeliveryGatewayFake();
+            var service = CreateService(deliveryGateway: delivery);
+            var orderId = await CreatePreparingOrderAsync(service);
+
+            var result = await service.CompletePreparationAsync(orderId);
+            var startDeliveryResult = await service.StartDeliveryAsync(orderId);
+
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(delivery.CallCount, Is.EqualTo(1));
+            Assert.That(delivery.OrderIds, Is.EqualTo(new[] { orderId }));
+            Assert.That(startDeliveryResult.IsSuccess, Is.True);
+        }
+
+        [Test]
+        public async Task CompletePreparation_WhenTransitionIsInvalid_DoesNotCallDelivery()
+        {
+            var delivery = new DeliveryGatewayFake();
+            var service = CreateService(deliveryGateway: delivery);
+            var orderId = await CreateConfirmedOrderAsync(service);
+
+            var result = await service.CompletePreparationAsync(orderId);
+            var startPreparationResult = await service.StartPreparationAsync(orderId);
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(ErrorCode.InvalidTransition));
+            Assert.That(delivery.CallCount, Is.EqualTo(0));
+            Assert.That(startPreparationResult.IsSuccess, Is.True);
+        }
+
+        [Test]
+        [Property("Requirement", "FR-5")]
+        public async Task CompletePreparation_WhenDeliverySubmissionFails_LeavesOrderPrepared()
+        {
+            var delivery = new DeliveryGatewayFake(_ => Task.FromResult(Result.Failure(ErrorCode.DeliveryFailed)));
+            var service = CreateService(deliveryGateway: delivery);
+            var orderId = await CreatePreparingOrderAsync(service);
+
+            var result = await service.CompletePreparationAsync(orderId);
+            var status = service.GetStatus(orderId);
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(ErrorCode.DeliveryFailed));
+            Assert.That(delivery.CallCount, Is.EqualTo(1));
+            Assert.That(status.IsSuccess, Is.True);
+            Assert.That(status.Value, Is.EqualTo(OrderStatus.Prepared));
+        }
+
+        [Test]
+        public async Task CompletePreparation_WaitsForDeliverySubmissionBeforeNextOrderCommand()
+        {
+            var delivery = new ControlledDeliveryGateway();
+            var service = CreateService(deliveryGateway: delivery);
+            var orderId = await CreatePreparingOrderAsync(service);
+            delivery.Block(orderId);
+
+            var completePreparationTask = service.CompletePreparationAsync(orderId);
+            await delivery.WaitUntilEnteredAsync(orderId);
+
+            var startDeliveryTask = service.StartDeliveryAsync(orderId);
+            await Task.Yield();
+
+            Assert.That(startDeliveryTask.IsCompleted, Is.False);
+
+            delivery.Release(orderId, Result.Success());
+
+            var completePreparationResult = await WaitForAsync(completePreparationTask);
+            var startDeliveryResult = await WaitForAsync(startDeliveryTask);
+
+            Assert.That(completePreparationResult.IsSuccess, Is.True);
+            Assert.That(startDeliveryResult.IsSuccess, Is.True);
+        }
+
+        [Test]
+        [Property("Requirement", "FR-5")]
+        public async Task CompleteDelivery_WhenValid_EndsInDelivered()
+        {
+            var archive = new ArchiveGatewayFake();
+            var service = CreateService(archiveGateway: archive);
+            var orderId = await CreateOutForDeliveryOrderAsync(service);
+
+            var result = await service.CompleteDeliveryAsync(orderId);
+            var status = service.GetStatus(orderId);
+
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(status.IsSuccess, Is.True);
+            Assert.That(status.Value, Is.EqualTo(OrderStatus.Delivered));
+            Assert.That(archive.CallCount, Is.EqualTo(0));
+        }
+
+        [Test]
+        [Property("Requirement", "FR-6")]
+        public async Task CompleteDelivery_WhenTransitionIsInvalid_DoesNotArchive()
+        {
+            var archive = new ArchiveGatewayFake();
+            var service = CreateService(archiveGateway: archive);
+            var orderId = await CreatePreparedOrderAsync(service);
+
+            var result = await service.CompleteDeliveryAsync(orderId);
+            var status = service.GetStatus(orderId);
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(ErrorCode.InvalidTransition));
+            Assert.That(status.IsSuccess, Is.True);
+            Assert.That(status.Value, Is.EqualTo(OrderStatus.Prepared));
+            Assert.That(archive.CallCount, Is.EqualTo(0));
+        }
+
+        [Test]
+        [Property("Requirement", "FR-6")]
+        public async Task Archive_WhenGatewaySucceeds_ReachesArchived()
+        {
+            var archive = new ArchiveGatewayFake();
+            var service = CreateService(archiveGateway: archive);
+            var orderId = await CreateDeliveredOrderAsync(service);
+
+            var result = await service.ArchiveAsync(orderId);
+            var status = service.GetStatus(orderId);
+
+            Assert.That(archive.CallCount, Is.EqualTo(1));
+            Assert.That(archive.OrderIds, Is.EqualTo(new[] { orderId }));
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(status.IsSuccess, Is.True);
+            Assert.That(status.Value, Is.EqualTo(OrderStatus.Archived));
+        }
+
+        [Test]
+        [Property("Requirement", "FR-6")]
+        public async Task Archive_WhenTransitionIsInvalid_DoesNotCallGateway()
+        {
+            var archive = new ArchiveGatewayFake();
+            var service = CreateService(archiveGateway: archive);
+            var orderId = await CreatePreparedOrderAsync(service);
+
+            var result = await service.ArchiveAsync(orderId);
+            var status = service.GetStatus(orderId);
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(ErrorCode.InvalidTransition));
+            Assert.That(archive.CallCount, Is.EqualTo(0));
+            Assert.That(status.IsSuccess, Is.True);
+            Assert.That(status.Value, Is.EqualTo(OrderStatus.Prepared));
+        }
+
+        [Test]
+        [Property("Requirement", "FR-6")]
+        public async Task Archive_WhenGatewayFails_LeavesOrderDelivered()
+        {
+            var archive = new ArchiveGatewayFake(_ => Task.FromResult(Result.Failure(ErrorCode.ArchiveFailed)));
+            var service = CreateService(archiveGateway: archive);
+            var orderId = await CreateDeliveredOrderAsync(service);
+
+            var result = await service.ArchiveAsync(orderId);
+            var status = service.GetStatus(orderId);
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(ErrorCode.ArchiveFailed));
+            Assert.That(archive.CallCount, Is.EqualTo(1));
+            Assert.That(status.IsSuccess, Is.True);
+            Assert.That(status.Value, Is.EqualTo(OrderStatus.Delivered));
+        }
+
+        [Test]
+        [Property("Requirement", "FR-6")]
+        [Property("Requirement", "NFR-5")]
+        public async Task Archive_WaitsForGatewayBeforeNextOrderCommand()
+        {
+            var archive = new ControlledArchiveGateway();
+            var service = CreateService(archiveGateway: archive);
+            var orderId = await CreateDeliveredOrderAsync(service);
+            archive.Block(orderId);
+
+            var archiveTask = service.ArchiveAsync(orderId);
+            await archive.WaitUntilEnteredAsync(orderId);
+
+            var secondArchiveTask = service.ArchiveAsync(orderId);
+            await Task.Yield();
+
+            Assert.That(secondArchiveTask.IsCompleted, Is.False);
+
+            archive.Release(orderId, Result.Success());
+
+            var archiveResult = await WaitForAsync(archiveTask);
+            var secondArchiveResult = await WaitForAsync(secondArchiveTask);
+            var status = service.GetStatus(orderId);
+
+            Assert.That(archiveResult.IsSuccess, Is.True);
+            Assert.That(secondArchiveResult.IsSuccess, Is.False);
+            Assert.That(secondArchiveResult.Error, Is.EqualTo(ErrorCode.InvalidTransition));
+            Assert.That(archive.CallCount, Is.EqualTo(1));
+            Assert.That(status.IsSuccess, Is.True);
+            Assert.That(status.Value, Is.EqualTo(OrderStatus.Archived));
         }
 
         [Test]
@@ -206,8 +422,14 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             Assert.That(secondAddPancakeResult.Error, Is.EqualTo(ErrorCode.CannotAddOrRemovePancakeInCurrentState));
         }
 
-        private static OrderApplicationService CreateService(IKitchenGateway? kitchenGateway = null) =>
-            new(kitchenGateway ?? new KitchenGatewayFake());
+        private static OrderApplicationService CreateService(
+            IKitchenGateway? kitchenGateway = null,
+            IDeliveryGateway? deliveryGateway = null,
+            IArchiveGateway? archiveGateway = null) =>
+            new(
+                kitchenGateway ?? new KitchenGatewayFake(),
+                deliveryGateway ?? new DeliveryGatewayFake(),
+                archiveGateway ?? new ArchiveGatewayFake());
 
         private static DeliveryAddress CreateAddress() =>
             new("Main Street", "Tel Aviv", "Israel");
@@ -238,6 +460,42 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             return orderId;
         }
 
+        private static async Task<Guid> CreatePreparingOrderAsync(OrderApplicationService service)
+        {
+            var orderId = await CreateConfirmedOrderAsync(service);
+            var startPreparationResult = await service.StartPreparationAsync(orderId);
+
+            Assert.That(startPreparationResult.IsSuccess, Is.True);
+            return orderId;
+        }
+
+        private static async Task<Guid> CreatePreparedOrderAsync(OrderApplicationService service)
+        {
+            var orderId = await CreatePreparingOrderAsync(service);
+            var completePreparationResult = await service.CompletePreparationAsync(orderId);
+
+            Assert.That(completePreparationResult.IsSuccess, Is.True);
+            return orderId;
+        }
+
+        private static async Task<Guid> CreateOutForDeliveryOrderAsync(OrderApplicationService service)
+        {
+            var orderId = await CreatePreparedOrderAsync(service);
+            var startDeliveryResult = await service.StartDeliveryAsync(orderId);
+
+            Assert.That(startDeliveryResult.IsSuccess, Is.True);
+            return orderId;
+        }
+
+        private static async Task<Guid> CreateDeliveredOrderAsync(OrderApplicationService service)
+        {
+            var orderId = await CreateOutForDeliveryOrderAsync(service);
+            var completeDeliveryResult = await service.CompleteDeliveryAsync(orderId);
+
+            Assert.That(completeDeliveryResult.IsSuccess, Is.True);
+            return orderId;
+        }
+
         private static async Task<T> WaitForAsync<T>(Task<T> task) =>
             await task.WaitAsync(TestTimeout);
 
@@ -258,6 +516,125 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
                 _calls.Enqueue(orderId);
                 return _acceptOrder(orderId);
             }
+        }
+
+        private sealed class DeliveryGatewayFake : IDeliveryGateway
+        {
+            private readonly Func<Guid, Task<Result>> _submitOrder;
+            private readonly ConcurrentQueue<Guid> _calls = new();
+
+            public DeliveryGatewayFake(Func<Guid, Task<Result>>? submitOrder = null)
+            {
+                _submitOrder = submitOrder ?? (_ => Task.FromResult(Result.Success()));
+            }
+
+            public int CallCount => _calls.Count;
+
+            public Guid[] OrderIds => _calls.ToArray();
+
+            public Task<Result> SubmitOrderAsync(Guid orderId)
+            {
+                _calls.Enqueue(orderId);
+                return _submitOrder(orderId);
+            }
+        }
+
+        private sealed class ArchiveGatewayFake : IArchiveGateway
+        {
+            private readonly Func<Guid, Task<Result>> _archiveOrder;
+            private readonly ConcurrentQueue<Guid> _calls = new();
+
+            public ArchiveGatewayFake(Func<Guid, Task<Result>>? archiveOrder = null)
+            {
+                _archiveOrder = archiveOrder ?? (_ => Task.FromResult(Result.Success()));
+            }
+
+            public int CallCount => _calls.Count;
+
+            public Guid[] OrderIds => _calls.ToArray();
+
+            public Task<Result> ArchiveOrderAsync(Guid orderId)
+            {
+                _calls.Enqueue(orderId);
+                return _archiveOrder(orderId);
+            }
+        }
+
+        private sealed class ControlledArchiveGateway : IArchiveGateway
+        {
+            private readonly ConcurrentDictionary<Guid, TaskCompletionSource<bool>> _enteredSignals = new();
+            private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Result>> _blockedOrders = new();
+            private readonly ConcurrentQueue<Guid> _calls = new();
+
+            public int CallCount => _calls.Count;
+
+            public void Block(Guid orderId)
+            {
+                _blockedOrders[orderId] = NewCompletionSource<Result>();
+            }
+
+            public async Task WaitUntilEnteredAsync(Guid orderId)
+            {
+                var signal = _enteredSignals.GetOrAdd(orderId, _ => NewCompletionSource<bool>());
+                await signal.Task.WaitAsync(TestTimeout);
+            }
+
+            public void Release(Guid orderId, Result result)
+            {
+                _blockedOrders[orderId].SetResult(result);
+            }
+
+            public Task<Result> ArchiveOrderAsync(Guid orderId)
+            {
+                _calls.Enqueue(orderId);
+
+                _enteredSignals
+                    .GetOrAdd(orderId, _ => NewCompletionSource<bool>())
+                    .TrySetResult(true);
+
+                return _blockedOrders.TryGetValue(orderId, out var release)
+                    ? release.Task
+                    : Task.FromResult(Result.Success());
+            }
+
+            private static TaskCompletionSource<T> NewCompletionSource<T>() =>
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        private sealed class ControlledDeliveryGateway : IDeliveryGateway
+        {
+            private readonly ConcurrentDictionary<Guid, TaskCompletionSource<bool>> _enteredSignals = new();
+            private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Result>> _blockedOrders = new();
+
+            public void Block(Guid orderId)
+            {
+                _blockedOrders[orderId] = NewCompletionSource<Result>();
+            }
+
+            public async Task WaitUntilEnteredAsync(Guid orderId)
+            {
+                var signal = _enteredSignals.GetOrAdd(orderId, _ => NewCompletionSource<bool>());
+                await signal.Task.WaitAsync(TestTimeout);
+            }
+
+            public void Release(Guid orderId, Result result)
+            {
+                _blockedOrders[orderId].SetResult(result);
+            }
+
+            public Task<Result> SubmitOrderAsync(Guid orderId)
+            {
+                _enteredSignals
+                    .GetOrAdd(orderId, _ => NewCompletionSource<bool>())
+                    .TrySetResult(true);
+
+                return _blockedOrders.TryGetValue(orderId, out var release)
+                    ? release.Task
+                    : Task.FromResult(Result.Success());
+            }
+
+            private static TaskCompletionSource<T> NewCompletionSource<T>() =>
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         private sealed class ControlledKitchenGateway : IKitchenGateway

@@ -62,7 +62,7 @@ namespace PancakeOrdering.Core.Domain.Orders
 
             var pancakeToRemove = _pancakes.FirstOrDefault(a => a.Id == pancakeId);
             if (pancakeToRemove == null)
-                return Result.Failure(ErrorCode.NoPancakeFound);
+                return Result.Failure(ErrorCode.PancakeNotFound);
 
             _pancakes.Remove(pancakeToRemove);
 
@@ -76,7 +76,7 @@ namespace PancakeOrdering.Core.Domain.Orders
 
             var pancake = _pancakes.FirstOrDefault(a => a.Id == pancakeId);
             if (pancake == null)
-                return Result.Failure(ErrorCode.NoPancakeFound);
+                return Result.Failure(ErrorCode.PancakeNotFound);
 
             return pancake.AddIngredient(ingredient);
         }
@@ -88,7 +88,7 @@ namespace PancakeOrdering.Core.Domain.Orders
 
             var pancake = _pancakes.FirstOrDefault(a => a.Id == pancakeId);
             if (pancake == null)
-                return Result.Failure(ErrorCode.NoPancakeFound);
+                return Result.Failure(ErrorCode.PancakeNotFound);
 
             return pancake.RemoveIngredient(ingredient);
         }
@@ -116,6 +116,7 @@ namespace PancakeOrdering.Core.Domain.Orders
         public Result Cancel()              => TryTransition(OrderAction.Cancel);
 
         internal Result ValidateConfirmation() => ValidateTransition(OrderAction.Confirm, out _);
+        internal Result ValidateArchiving() => ValidateTransition(OrderAction.Archive, out _);
 
         private Result TryTransition(OrderAction action)
         {
