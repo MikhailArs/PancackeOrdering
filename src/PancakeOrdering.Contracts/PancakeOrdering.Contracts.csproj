@@ -7,10 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Dtos\" />
+    <Folder Include="Results\" />
     <Folder Include="Services\" />
     <Folder Include="Requests\" />
-    <Folder Include="Results\" />
   </ItemGroup>
 
 </Project>

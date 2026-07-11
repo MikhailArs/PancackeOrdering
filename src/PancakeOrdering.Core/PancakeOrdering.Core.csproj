@@ -11,11 +11,8 @@
     <Folder Include="Application\Handlers\" />
     <Folder Include="Application\Dispatching\" />
     <Folder Include="Application\Ports\" />
-    <Folder Include="Common\" />
     <Folder Include="Domain\Ingredients\" />
-    <Folder Include="Domain\States\" />
     <Folder Include="Domain\Pancakes\" />
-    <Folder Include="Domain\Orders\" />
   </ItemGroup>
 
 </Project>
