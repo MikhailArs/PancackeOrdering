@@ -1,22 +1,13 @@
-﻿using PancakeOrdering.Core.Common.Results;
-using PancakeOrdering.Core.Domain.Enums;
-using PancakeOrdering.Core.Domain.Orders;
+﻿using PancakeOrdering.Core.Domain.Enums;
 
 namespace PancakeOrdering.Core.Domain.States
 {
-    internal class PreparedState : StateBase
+    internal sealed class PreparedState : StateBase
     {
         public static PreparedState Instance { get; } = new();
 
-        private PreparedState()
-        {
-        }
+        private PreparedState() { }
 
         public override OrderStatus Status => OrderStatus.Prepared;
-
-        public override bool CanChangeAddress => false;
-        public override bool CanModifyPancakes => false;
-
-        public override Result ValidateEntry(Order order) => Result.Success();
     }
 }

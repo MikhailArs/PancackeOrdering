@@ -1,22 +1,16 @@
-﻿using PancakeOrdering.Core.Common.Results;
-using PancakeOrdering.Core.Domain.Enums;
-using PancakeOrdering.Core.Domain.Orders;
+﻿using PancakeOrdering.Core.Domain.Enums;
 
 namespace PancakeOrdering.Core.Domain.States
 {
-    internal class DraftState : StateBase
+    internal sealed class DraftState : StateBase
     {
         public static DraftState Instance { get; } = new();
 
-        private DraftState()
-        {
-        }
+        private DraftState() { }
 
         public override OrderStatus Status => OrderStatus.Draft;
 
         public override bool CanChangeAddress => true;
         public override bool CanModifyPancakes => true;
-
-        public override Result ValidateEntry(Order order) => Result.Success();
     }
 }
