@@ -38,6 +38,7 @@ Assumptions
 - Ingredient availability is provided through an external abstraction.
 - Commands for different orders may execute concurrently.
 - Commands for the same order are processed in enqueue order.
+- Ingredients of same type can not be added in same pancake
 
 
 Out of Scope

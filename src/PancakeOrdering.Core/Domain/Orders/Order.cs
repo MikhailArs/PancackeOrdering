@@ -7,23 +7,59 @@ namespace PancakeOrdering.Core.Domain.Orders
 {
     internal sealed class Order
     {
-        private Order(Pancake[] pancakes)
+        private int _pancakesCounter;
+        private readonly List<Pancake> _pancakes;
+
+        private Order()
         {
             CurrentState = DraftState.Instance;
-            Pancakes = pancakes;
+            _pancakes = new List<Pancake>();
         }
 
         public IOrderState CurrentState { get; private set; }
 
         public OrderStatus Status => CurrentState.Status;
 
-        public Pancake[] Pancakes { get; private set; }
+        public Pancake[] Pancakes => _pancakes.ToArray();
 
-        public static Order Create(params Pancake[]? pancakes)
+        public static Order Create()
         {
-            pancakes = pancakes is null ? [] : pancakes.ToArray();
-            return new Order(pancakes);
+            return new Order();
         }
+
+        public Result<int> AddPancake(Ingredient ingredient) => AddPancake([ingredient]);
+
+        public Result<int> AddPancake(HashSet<Ingredient>? ingredients)
+        {
+            if (!CurrentState.CanModifyPancakes)
+                return Result.Failure(ErrorCode.CannotAddOrRemovePancakeInCurrentState);
+
+            var pancake = ingredients == null ? new Pancake(GetNextPancakeId()) : new Pancake(GetNextPancakeId(), ingredients);
+
+            _pancakes.Add(pancake);
+
+            return Result.Success(pancake.Id);
+        }
+        
+        public Result RemovePancake(int pancakeId)
+        {
+            if (!CurrentState.CanModifyPancakes)
+                return Result.Failure(ErrorCode.CannotAddOrRemovePancakeInCurrentState);
+
+            if (!_pancakes.Any())
+                return Result.Failure(ErrorCode.NoPancakesToRemove);
+
+            var pancakeToRemove = _pancakes.FirstOrDefault(a => a.Id == pancakeId);
+            if (pancakeToRemove == null)
+                return Result.Failure(ErrorCode.NoPancakeFound);
+
+            _pancakes.Remove(pancakeToRemove);
+
+            return Result.Success();
+        }
+
+
+
 
         public Result Confirm()
         {
@@ -36,10 +72,7 @@ namespace PancakeOrdering.Core.Domain.Orders
         {
             return Result.Success();
         }
-        public Result UpdatePancakes()
-        {
-            return Result.Success();
-        }
+
         public Result UpdateIngredients()
         {
             return Result.Success();
@@ -83,5 +116,7 @@ namespace PancakeOrdering.Core.Domain.Orders
 
             return Result.Success();
         }
+
+        private int GetNextPancakeId() => ++_pancakesCounter;
     }
 }

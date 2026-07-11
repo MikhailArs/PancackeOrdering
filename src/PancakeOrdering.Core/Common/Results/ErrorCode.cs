@@ -4,6 +4,10 @@
     {
         InternalError = 0,
         InvalidTransition,
-        OrderMustContainPancake
+        OrderMustContainPancake,
+        NoPancakesToRemove,
+        NoPancakeFound,
+        CannotAddOrRemovePancakeInCurrentState,
+        DuplicateIngredientAdded
     }
 }
