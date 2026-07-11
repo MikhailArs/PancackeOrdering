@@ -1,9 +1,6 @@
-﻿using PancakeOrdering.Core.Domain.Enums;
+﻿using PancakeOrdering.Core.Common.Results;
+using PancakeOrdering.Core.Domain.Enums;
 using PancakeOrdering.Core.Domain.Orders;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using PancakeOrdering.Core.Common.Results;
 
 namespace PancakeOrdering.Core.Domain.States
 {

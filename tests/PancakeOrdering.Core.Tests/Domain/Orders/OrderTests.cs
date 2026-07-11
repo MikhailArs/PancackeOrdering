@@ -9,7 +9,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void Confirm_WithOnePancake_ChangesStatusToConfirmed()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             order.AddPancake(Ingredient.Chocolate);
 
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Draft));
@@ -23,7 +23,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void Confirm_WithoutPancakes_ReturnsFailureAndKeepsDraftStatus()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
 
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Draft));
 
@@ -37,7 +37,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void AddPancake_OnDraftState_PancakeAdded()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
 
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Draft));
 
@@ -49,7 +49,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void RemovePancake_OnDraftState_PancakeRemoved()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Draft));
 
             var resultInt = order.AddPancake(Ingredient.Honey);
@@ -65,7 +65,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void RemoveNonExistingPancake_OnDraftState_PancakeAdded()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Draft));
 
             var resultInt = order.AddPancake(Ingredient.Honey);
@@ -84,7 +84,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void RemovePancake_OnConfirmedState_ReturnsFailure()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Draft));
 
             var resultInt = order.AddPancake(Ingredient.Honey);
@@ -104,7 +104,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void AddPancake_OnConfirmedState_ReturnsFailure()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             order.AddPancake(Ingredient.Chocolate);
 
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Draft));
@@ -121,7 +121,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void AddIngredient_OnDraftState_AddsIngredient()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             var pancakeId = AddEmptyPancake(order);
 
             var result = order.AddIngredient(pancakeId, Ingredient.Honey);
@@ -133,7 +133,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void AddIngredient_WhenAlreadyExists_ReturnsFailure()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             var pancakeId = AddEmptyPancake(order);
             order.AddIngredient(pancakeId, Ingredient.Honey);
 
@@ -146,7 +146,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void RemoveIngredient_OnDraftState_RemovesIngredient()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             var pancakeId = AddEmptyPancake(order);
             order.AddIngredient(pancakeId, Ingredient.Jam);
 
@@ -159,7 +159,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void RemoveIngredient_WhenIngredientDoesNotExist_ReturnsFailure()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             var pancakeId = AddEmptyPancake(order);
 
             var result = order.RemoveIngredient(pancakeId, Ingredient.Chocolate);
@@ -171,7 +171,7 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [Test]
         public void ModifyIngredients_OnConfirmedOrder_ReturnsFailure()
         {
-            var order = Order.Create();
+            var order = CreateOrder();
             var addPancakeResult = order.AddPancake(Ingredient.Honey);
             Assert.That(addPancakeResult.IsSuccess, Is.True);
             var pancakeId = (int)addPancakeResult.Value!;
@@ -187,12 +187,88 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
             Assert.That(removeIngredientResult.Error, Is.EqualTo(ErrorCode.CannotAddOrRemovePancakeInCurrentState));
         }
 
+        [Test]
+        public void CreateOrder_WithValidAddress_AddressStored()
+        {
+            var address = new DeliveryAddress("Main Street", "Tel Aviv", "Israel");
+
+            var result = Order.Create(address);
+
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.Value!.DeliveryAddress.Street, Is.EqualTo("Main Street"));
+            Assert.That(result.Value.DeliveryAddress.City, Is.EqualTo("Tel Aviv"));
+            Assert.That(result.Value.DeliveryAddress.Country, Is.EqualTo("Israel"));
+        }
+
+        [Test]
+        public void ChangeAddress_OnDraftState_AddressChanged()
+        {
+            var order = CreateOrder();
+            var newAddress = new DeliveryAddress("Second Street", "Jerusalem", "Israel");
+
+            var result = order.ChangeDeliveryAddress(newAddress);
+
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(order.DeliveryAddress.Street, Is.EqualTo("Second Street"));
+            Assert.That(order.DeliveryAddress.City, Is.EqualTo("Jerusalem"));
+            Assert.That(order.DeliveryAddress.Country, Is.EqualTo("Israel"));
+        }
+
+        [Test]
+        public void ChangeAddress_OnConfirmedOrder_ReturnsFailure()
+        {
+            var order = CreateOrder();
+            var originalAddress = order.DeliveryAddress;
+            order.AddPancake(Ingredient.Honey);
+            var confirmResult = order.Confirm();
+            Assert.That(confirmResult.IsSuccess, Is.True);
+
+            var result = order.ChangeDeliveryAddress(new DeliveryAddress("Second Street", "Jerusalem", "Israel"));
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(ErrorCode.CannotChangeAddressInCurrentState));
+            Assert.That(order.DeliveryAddress, Is.EqualTo(originalAddress));
+        }
+
+        [Test]
+        public void CreateAddress_WithNullField_ReturnsFailure()
+        {
+            var address = new DeliveryAddress(null, "Tel Aviv", "Israel");
+
+            var result = Order.Create(address);
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(ErrorCode.InvalidDeliveryAddress));
+        }
+
+        [Test]
+        public void ChangeAddress_WithInvalidAddress_ReturnsFailureAndKeepsCurrentAddress()
+        {
+            var order = CreateOrder();
+            var originalAddress = order.DeliveryAddress;
+
+            var result = order.ChangeDeliveryAddress(
+                new DeliveryAddress(null, "Tel Aviv", "Israel"));
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(ErrorCode.InvalidDeliveryAddress));
+            Assert.That(order.DeliveryAddress, Is.EqualTo(originalAddress));
+        }
+
         private static int AddEmptyPancake(Order order)
         {
             var result = order.AddPancake(null);
 
             Assert.That(result.IsSuccess, Is.True);
             return (int)result.Value!;
+        }
+
+        private static Order CreateOrder()
+        {
+            var result = Order.Create(new DeliveryAddress("Main Street", "Tel Aviv", "Israel"));
+
+            Assert.That(result.IsSuccess, Is.True);
+            return result.Value!;
         }
     }
 }

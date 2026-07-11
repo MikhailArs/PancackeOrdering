@@ -39,7 +39,5 @@
         }
 
         public T? Value { get; }
-
-        public bool HasValue => IsSuccess;
     }
 }

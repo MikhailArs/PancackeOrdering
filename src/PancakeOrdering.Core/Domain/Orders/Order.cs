@@ -10,21 +10,27 @@ namespace PancakeOrdering.Core.Domain.Orders
         private int _pancakesCounter;
         private readonly List<Pancake> _pancakes;
 
-        private Order()
+        private Order(DeliveryAddress deliveryAddress)
         {
             CurrentState = DraftState.Instance;
             _pancakes = new List<Pancake>();
+            DeliveryAddress = deliveryAddress;
         }
 
         public IOrderState CurrentState { get; private set; }
 
         public OrderStatus Status => CurrentState.Status;
 
+        public DeliveryAddress DeliveryAddress { get; private set; }
+
         public Pancake[] Pancakes => _pancakes.ToArray();
 
-        public static Order Create()
+        public static Result<Order> Create(DeliveryAddress? deliveryAddress)
         {
-            return new Order();
+            var validationResult = DeliveryAddress.Validate(deliveryAddress);
+            return validationResult.IsSuccess
+                ? Result.Success(new Order(deliveryAddress!))
+                : Result.Failure<Order>(validationResult.Error!.Value);
         }
 
         public Result<int> AddPancake(Ingredient ingredient) => AddPancake([ingredient]);
@@ -90,8 +96,16 @@ namespace PancakeOrdering.Core.Domain.Orders
                 : Result.Failure(ErrorCode.InvalidTransition);
         }
 
-        public Result UpdateAddress()
+        public Result ChangeDeliveryAddress(DeliveryAddress address)
         {
+            if (!CurrentState.CanChangeAddress)
+                return Result.Failure(ErrorCode.CannotChangeAddressInCurrentState);
+
+            var validationResult = DeliveryAddress.Validate(address);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            DeliveryAddress = address;
             return Result.Success();
         }
 

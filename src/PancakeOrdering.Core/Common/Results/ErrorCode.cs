@@ -9,6 +9,8 @@
         NoPancakeFound,
         CannotAddOrRemovePancakeInCurrentState,
         DuplicateIngredientAdded,
-        IngredientNotFound
+        IngredientNotFound,
+        InvalidDeliveryAddress,
+        CannotChangeAddressInCurrentState
     }
 }

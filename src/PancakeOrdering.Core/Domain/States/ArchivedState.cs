@@ -8,7 +8,7 @@ namespace PancakeOrdering.Core.Domain.States
     {
         public static ArchivedState Instance { get; } = new();
 
-        public ArchivedState()
+        private ArchivedState()
         {
         }
 
@@ -28,11 +28,6 @@ namespace PancakeOrdering.Core.Domain.States
                 // TODO[Mik]: Log to be added (order.CurrentState.Status)
                 return Result.Failure(ErrorCode.InvalidTransition);
             }
-        }
-
-        public override void OnEnter(Order order)
-        {
-            order.MarkArchived();
         }
     }
 }
