@@ -16,10 +16,7 @@ namespace PancakeOrdering.Core.Domain.States
 
         public override bool CanChangeAddress => true;
         public override bool CanModifyPancakes => true;
-        public override bool CanCancel => true;
-        public override bool CanArchive => false;
 
-        public override Result ValidateEntry(Order order)
-            => Result.Success();
+        public override Result ValidateEntry(Order order) => Result.Success();
     }
 }

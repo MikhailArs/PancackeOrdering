@@ -8,18 +8,13 @@ namespace PancakeOrdering.Core.Domain.States
     {
         public static PreparingState Instance { get; } = new();
 
-        private PreparingState()
-        {
-        }
+        private PreparingState() { }
 
         public override OrderStatus Status => OrderStatus.Preparing;
 
         public override bool CanChangeAddress => false;
         public override bool CanModifyPancakes => false;
-        public override bool CanCancel => false;
-        public override bool CanArchive => false;
 
-        public override Result ValidateEntry(Order order)
-            => Result.Success();
+        public override Result ValidateEntry(Order order) => Result.Success();
     }
 }

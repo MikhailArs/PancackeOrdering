@@ -10,8 +10,6 @@ namespace PancakeOrdering.Core.Domain.States
 
         bool CanChangeAddress { get; }
         bool CanModifyPancakes { get; }
-        bool CanCancel { get; }
-        bool CanArchive { get; }
 
         Result ValidateEntry(Order order);
 

@@ -8,18 +8,13 @@ namespace PancakeOrdering.Core.Domain.States
     {
         public static DeliveredState Instance { get; } = new();
 
-        private DeliveredState()
-        {
-        }
+        private DeliveredState() { }
 
         public override OrderStatus Status => OrderStatus.Delivered;
 
         public override bool CanChangeAddress => false;
         public override bool CanModifyPancakes => false;
-        public override bool CanCancel => false;
-        public override bool CanArchive => true;
 
-        public override Result ValidateEntry(Order order)
-            => Result.Success();
+        public override Result ValidateEntry(Order order) => Result.Success();
     }
 }

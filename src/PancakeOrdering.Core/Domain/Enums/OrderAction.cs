@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PancakeOrdering.Core.Domain.Enums
+﻿namespace PancakeOrdering.Core.Domain.Enums
 {
     internal enum OrderAction
     {
@@ -10,8 +6,8 @@ namespace PancakeOrdering.Core.Domain.Enums
         Cancel,
         StartPreparation,
         CompletePreparation,
-        Dispatch,
-        Deliver,
+        StartDelivery,
+        CompleteDelivery,
         Archive
     }
 }

@@ -8,28 +8,17 @@ namespace PancakeOrdering.Core.Domain.States
     {
         public static ConfirmedState Instance { get; } = new();
 
-        private ConfirmedState()
-        {
-        }
+        private ConfirmedState() { }
 
         public override OrderStatus Status => OrderStatus.Confirmed;
 
         public override bool CanChangeAddress => false;
         public override bool CanModifyPancakes => false;
-        public override bool CanCancel => true;
-        public override bool CanArchive => false;
 
-        public override Result ValidateEntry(Order order)
-        {
-            if (order.Pancakes.Length > 0)
-            {
-                return Result.Success();
-            }
-            else
-            {
-                // TODO[Mik]: Log to be added (order.Pancakes.Length)
-                return Result.Failure(ErrorCode.OrderMustContainPancake);
-            }
-        }
+        public override Result ValidateEntry(Order order) =>
+            order.PancakeCount > 0 
+                ? Result.Success()
+                : Result.Failure(ErrorCode.OrderMustContainPancake);
+        
     }
 }

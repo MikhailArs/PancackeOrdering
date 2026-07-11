@@ -25,6 +25,8 @@ namespace PancakeOrdering.Core.Domain.Orders
 
         public Pancake[] Pancakes => _pancakes.ToArray();
 
+        internal int PancakeCount => _pancakes.Count;
+
         public static Result<Order> Create(DeliveryAddress? deliveryAddress)
         {
             var validationResult = DeliveryAddress.Validate(deliveryAddress);
@@ -88,14 +90,6 @@ namespace PancakeOrdering.Core.Domain.Orders
             return pancake.RemoveIngredient(ingredient);
         }
 
-
-        public Result Confirm()
-        {
-            return CurrentState.Status == OrderStatus.Draft
-                ? TransitionTo(ConfirmedState.Instance)
-                : Result.Failure(ErrorCode.InvalidTransition);
-        }
-
         public Result ChangeDeliveryAddress(DeliveryAddress address)
         {
             if (!CurrentState.CanChangeAddress)
@@ -109,42 +103,25 @@ namespace PancakeOrdering.Core.Domain.Orders
             return Result.Success();
         }
 
-        public Result UpdateIngredients()
-        {
-            return Result.Success();
-        }
-        public Result MarkPreparationStarted()
-        {
-            return Result.Success();
-        }
-        public Result MarkPrepared()
-        {
-            return Result.Success();
-        }
-        public Result MarkDelivered()
-        {
-            return Result.Success();
-        }
-        public Result MarkArchived()
-        {
-            return Result.Success();
-        }
-        public Result MarkConfirmed()
-        {
-            return Confirm();
-        }
-        public Result Cancel()
-        {
-            return Result.Success();
-        }
 
-        private Result TransitionTo(IOrderState nextState)
+
+        public Result Confirm()             => TryTransition(OrderAction.Confirm);
+        public Result StartPreparation()    => TryTransition(OrderAction.StartPreparation);
+        public Result CompletePreparation() => TryTransition(OrderAction.CompletePreparation);
+        public Result StartDelivery()       => TryTransition(OrderAction.StartDelivery);
+        public Result CompleteDelivery()    => TryTransition(OrderAction.CompleteDelivery);
+        public Result Archive()             => TryTransition(OrderAction.Archive);
+        public Result Cancel()              => TryTransition(OrderAction.Cancel);
+
+
+        private Result TryTransition(OrderAction action)
         {
+            if (!OrderStateTransitions.TryResolve(CurrentState.Status, action, out var nextState))
+                return Result.Failure(ErrorCode.InvalidTransition);
+
             var entryResult = nextState.ValidateEntry(this);
             if (!entryResult.IsSuccess)
-            {
                 return entryResult;
-            }
 
             CurrentState.OnExit(this);
             CurrentState = nextState;
