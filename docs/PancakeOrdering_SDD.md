@@ -15,7 +15,7 @@ The solution follows a Clean Architecture structure:
 - Contracts defines the public API models, requests, DTOs, public enums, OperationResult<T>, and OperationErrorCode.
 - Core contains Domain logic only and has no reference to Contracts or Application.
 - Application references Contracts and Core. It owns use cases, per-order command queues, ports, the public method-call facade, and mapping between Contracts and Domain.
-- Infrastructure may implement Application ports later.
+- Infrastructure implements external adapters when required. The current Infrastructure adapter is an in-memory Kitchen.
 - Host may act as the composition root later.
 - Tests verify domain rules, application flows, and concurrency behavior.
 - Demo may provide a simple executable example of the service.
@@ -65,6 +65,9 @@ SDD-4.7 API models are mapped to and from Domain objects inside Application.
 Contracts and Core do not reference each other.
 
 SDD-4.8 The public C# method-call API is represented by IPancakeOrderingService in Contracts.
+IPancakeOrderingService inherits the narrower IOrderQueryService contract so components that only need to read Orders can depend only on:
+- GetOrder
+
 It exposes Customer operations:
 - CreateOrder
 - GetOrder
@@ -87,6 +90,8 @@ Customer commands are routed through the existing per-order command queue before
 Queued commands operate on the mutable Order aggregate and publish a complete immutable snapshot before the queued command completes.
 GetOrder is synchronous, is not queued, reads only the current immutable snapshot, and returns the last completely published OrderDto.
 In-progress command state is not exposed to queries.
+
+The Kitchen uses the same public query model. When an Order is submitted to Kitchen, the Kitchen receives only OrderId and pulls the immutable OrderDto through IOrderQueryService. Domain objects, internal snapshots, and Kitchen-specific duplicate Order DTOs are not passed to Infrastructure.
 
 SDD-5. Order Lifecycle Design
 SDD-5.1 The order lifecycle is implemented using a lightweight State Pattern (see SDD-7. Trade-offs and Alternatives).
@@ -112,6 +117,13 @@ Snapshot publication replaces the whole immutable snapshot reference.
 If a command mutates the Order and later returns a failure from an external boundary, the published snapshot still reflects the actual completed Aggregate state.
 SDD-6.5 Commands for different orders use different queues and may execute concurrently.
 SDD-6.6 The Order aggregate contains no locking or thread-synchronization logic.
+
+SDD-6.7 The in-memory Kitchen protects its stock dictionary with one short private lock.
+
+SDD-6.8 Kitchen and Ingredient Availability
+SDD-6.8.1 Ingredient represented as an enum.
+SDD-6.8.2 Draft AddPancake and AddIngredient commands check ingredient availability inside the same per-order Channel operation before mutating the Order. These checks do not reserve or consume stock.
+SDD-6.8.3 Kitchen acceptance is the stock-consumption point. During Confirm, Application validates that confirmation is allowed, calls Kitchen with OrderId, and confirms the Order only after Kitchen accepts.
 
 SDD-7. Trade-offs and Alternatives
 SDD-7.1 State pattern vs state enum only

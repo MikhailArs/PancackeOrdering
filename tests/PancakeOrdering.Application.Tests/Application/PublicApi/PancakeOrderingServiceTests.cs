@@ -20,6 +20,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             var contractsReferences = GetProjectReferences("src/PancakeOrdering.Contracts/PancakeOrdering.Contracts.csproj");
             var coreReferences = GetProjectReferences("src/PancakeOrdering.Core/PancakeOrdering.Core.csproj");
             var applicationReferences = GetProjectReferences("src/PancakeOrdering.Application/PancakeOrdering.Application.csproj");
+            var infrastructureReferences = GetProjectReferences("src/PancakeOrdering.Infrastructure/PancakeOrdering.Infrastructure.csproj");
 
             Assert.That(contractsReferences, Is.Empty);
             Assert.That(coreReferences, Does.Not.Contain("PancakeOrdering.Contracts.csproj"));
@@ -29,6 +30,84 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
                 "PancakeOrdering.Contracts.csproj",
                 "PancakeOrdering.Core.csproj"
             }));
+            Assert.That(infrastructureReferences, Is.EquivalentTo(new[]
+            {
+                "PancakeOrdering.Application.csproj",
+                "PancakeOrdering.Contracts.csproj",
+                "PancakeOrdering.Core.csproj"
+            }));
+        }
+
+        [Test]
+        [Property("Requirement", "FR-10")]
+        public void PublicConstructor_RequiresExplicitIngredientAvailability()
+        {
+            var constructor = typeof(PancakeOrderingService).GetConstructor(new[]
+            {
+                typeof(IKitchenGateway),
+                typeof(IIngredientAvailability),
+                typeof(IDeliveryGateway),
+                typeof(IArchiveGateway)
+            });
+            var oldConstructor = typeof(PancakeOrderingService).GetConstructor(new[]
+            {
+                typeof(IKitchenGateway),
+                typeof(IDeliveryGateway),
+                typeof(IArchiveGateway)
+            });
+
+            Assert.That(constructor, Is.Not.Null);
+            Assert.That(oldConstructor, Is.Null);
+            Assert.That(typeof(IKitchenGateway).IsAssignableFrom(typeof(IIngredientAvailability)), Is.False);
+            Assert.That(typeof(IIngredientAvailability).IsAssignableFrom(typeof(IKitchenGateway)), Is.False);
+        }
+
+        [Test]
+        [Property("Requirement", "FR-10")]
+        [Property("Requirement", "NFR-3")]
+        public async Task KitchenGateway_DoesNotNeedToImplementIngredientAvailability()
+        {
+            var kitchen = new KitchenGatewayFake();
+            var availability = new IngredientAvailabilityFake();
+            var service = new PancakeOrderingService(
+                kitchen,
+                availability,
+                new DeliveryGatewayFake(),
+                new ArchiveGatewayFake());
+            var orderId = CreateOrder(service);
+
+            var result = await service.AddPancakeAsync(
+                new AddPancakeRequest(orderId, new[] { IngredientTypeDto.Honey }));
+
+            Assert.That(result.IsSuccess, Is.True);
+            Assert.That(result.Value!.Pancakes.Single().Ingredients, Is.EqualTo(new[] { IngredientTypeDto.Honey }));
+            Assert.That(availability.CallCount, Is.EqualTo(1));
+            Assert.That(kitchen.CallCount, Is.EqualTo(0));
+        }
+
+        [Test]
+        [Property("Requirement", "FR-10")]
+        public async Task AvailabilityFailure_IsRespectedBeforeDraftMutation()
+        {
+            var kitchen = new KitchenGatewayFake();
+            var availability = new IngredientAvailabilityFake(CoreResults.Result.Failure(CoreResults.ErrorCode.IngredientUnavailable));
+            var service = new PancakeOrderingService(
+                kitchen,
+                availability,
+                new DeliveryGatewayFake(),
+                new ArchiveGatewayFake());
+            var orderId = CreateOrder(service);
+
+            var result = await service.AddPancakeAsync(
+                new AddPancakeRequest(orderId, new[] { IngredientTypeDto.Honey }));
+            var orderResult = service.GetOrder(new GetOrderRequest(orderId));
+
+            Assert.That(result.IsSuccess, Is.False);
+            Assert.That(result.Error, Is.EqualTo(ContractResults.OperationErrorCode.IngredientUnavailable));
+            Assert.That(orderResult.IsSuccess, Is.True);
+            Assert.That(orderResult.Value!.Pancakes, Is.Empty);
+            Assert.That(availability.CallCount, Is.EqualTo(1));
+            Assert.That(kitchen.CallCount, Is.EqualTo(0));
         }
 
         [Test]
@@ -332,11 +411,12 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         [Property("Requirement", "NFR-2")]
         public void GetOrder_IsSynchronous()
         {
-            var method = typeof(IPancakeOrderingService).GetMethod(nameof(IPancakeOrderingService.GetOrder));
+            var method = typeof(IOrderQueryService).GetMethod(nameof(IOrderQueryService.GetOrder));
 
             Assert.That(method, Is.Not.Null);
             Assert.That(method!.ReturnType, Is.EqualTo(typeof(ContractResults.OperationResult<OrderDto>)));
             Assert.That(typeof(Task).IsAssignableFrom(method.ReturnType), Is.False);
+            Assert.That(typeof(IOrderQueryService).IsAssignableFrom(typeof(IPancakeOrderingService)), Is.True);
         }
 
         private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(3);
@@ -349,7 +429,8 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             return new OrderApplicationService(
                 kitchenGateway ?? new KitchenGatewayFake(),
                 deliveryGateway ?? new DeliveryGatewayFake(),
-                archiveGateway ?? new ArchiveGatewayFake());
+                archiveGateway ?? new ArchiveGatewayFake(),
+                new IngredientAvailabilityFake());
         }
 
         private static IPancakeOrderingService CreateService(IKitchenGateway? kitchenGateway = null) =>
@@ -471,6 +552,27 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             {
                 _calls.Enqueue(orderId);
                 return Task.FromResult(CoreResults.Result.Success());
+            }
+        }
+
+        private sealed class IngredientAvailabilityFake : IIngredientAvailability
+        {
+            private readonly CoreResults.Result _result;
+
+            public IngredientAvailabilityFake(CoreResults.Result? result = null)
+            {
+                _result = result ?? CoreResults.Result.Success();
+            }
+
+            public int CallCount { get; private set; }
+
+            public Task<CoreResults.Result> CheckAvailabilityAsync(IReadOnlyCollection<IngredientTypeDto> ingredients) =>
+                Task.FromResult(CheckAvailability());
+
+            private CoreResults.Result CheckAvailability()
+            {
+                CallCount++;
+                return _result;
             }
         }
 

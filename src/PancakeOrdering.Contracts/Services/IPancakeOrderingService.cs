@@ -4,7 +4,8 @@ using PancakeOrdering.Contracts.Results;
 
 namespace PancakeOrdering.Contracts.Services;
 
-public interface IPancakeOrderingService
+public interface IPancakeOrderingService :
+    IOrderQueryService
 {
     OperationResult<OrderDto> CreateOrder(CreateOrderRequest request);
 
@@ -21,6 +22,4 @@ public interface IPancakeOrderingService
     Task<OperationResult<OrderDto>> ConfirmOrderAsync(ConfirmOrderRequest request);
 
     Task<OperationResult<OrderDto>> CancelOrderAsync(CancelOrderRequest request);
-
-    OperationResult<OrderDto> GetOrder(GetOrderRequest request);
 }

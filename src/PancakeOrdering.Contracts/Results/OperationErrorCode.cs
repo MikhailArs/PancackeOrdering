@@ -15,5 +15,6 @@ public enum OperationErrorCode
     InvalidDeliveryAddress,
     CannotChangeAddressInCurrentState,
     OrderNotFound,
-    KitchenDeclined
+    KitchenDeclined,
+    IngredientUnavailable
 }

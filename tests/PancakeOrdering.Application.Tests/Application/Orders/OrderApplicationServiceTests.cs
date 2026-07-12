@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using PancakeOrdering.Application;
 using PancakeOrdering.Application.Ports;
+using PancakeOrdering.Contracts.Dtos;
 using PancakeOrdering.Core.Common.Results;
 using PancakeOrdering.Core.Domain.Enums;
 using PancakeOrdering.Core.Domain.Orders;
@@ -439,11 +440,13 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         private static OrderApplicationService CreateService(
             IKitchenGateway? kitchenGateway = null,
             IDeliveryGateway? deliveryGateway = null,
-            IArchiveGateway? archiveGateway = null) =>
+            IArchiveGateway? archiveGateway = null,
+            IIngredientAvailability? ingredientAvailability = null) =>
             new(
                 kitchenGateway ?? new KitchenGatewayFake(),
                 deliveryGateway ?? new DeliveryGatewayFake(),
-                archiveGateway ?? new ArchiveGatewayFake());
+                archiveGateway ?? new ArchiveGatewayFake(),
+                ingredientAvailability ?? new IngredientAvailabilityFake());
 
         private static DeliveryAddress CreateAddress() =>
             new("Main Street", "Tel Aviv", "Israel");
@@ -530,6 +533,12 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
                 _calls.Enqueue(orderId);
                 return _acceptOrder(orderId);
             }
+        }
+
+        private sealed class IngredientAvailabilityFake : IIngredientAvailability
+        {
+            public Task<Result> CheckAvailabilityAsync(IReadOnlyCollection<IngredientTypeDto> ingredients) =>
+                Task.FromResult(Result.Success());
         }
 
         private sealed class DeliveryGatewayFake : IDeliveryGateway

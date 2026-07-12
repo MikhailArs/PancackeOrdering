@@ -14,6 +14,7 @@
         CannotChangeAddressInCurrentState,
         OrderNotFound,
         KitchenDeclined,
+        IngredientUnavailable,
         DeliveryFailed,
         ArchiveFailed
     }

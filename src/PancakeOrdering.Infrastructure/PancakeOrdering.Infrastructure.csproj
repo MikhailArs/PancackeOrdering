@@ -7,9 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Kitchen\" />
     <Folder Include="Delivery\" />
     <Folder Include="Persistence\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PancakeOrdering.Application\PancakeOrdering.Application.csproj" />
+    <ProjectReference Include="..\PancakeOrdering.Contracts\PancakeOrdering.Contracts.csproj" />
+    <ProjectReference Include="..\PancakeOrdering.Core\PancakeOrdering.Core.csproj" />
   </ItemGroup>
 
 </Project>

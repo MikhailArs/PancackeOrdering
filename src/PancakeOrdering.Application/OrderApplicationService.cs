@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using PancakeOrdering.Application.Dispatching;
 using PancakeOrdering.Application.Orders.Snapshots;
 using PancakeOrdering.Application.Ports;
+using PancakeOrdering.Contracts.Dtos;
 using PancakeOrdering.Core.Common.Results;
 using PancakeOrdering.Core.Domain.Enums;
 using PancakeOrdering.Core.Domain.Orders;
@@ -13,17 +14,36 @@ namespace PancakeOrdering.Application
         private readonly IKitchenGateway _kitchenGateway;
         private readonly IDeliveryGateway _deliveryGateway;
         private readonly IArchiveGateway _archiveGateway;
+        private readonly IIngredientAvailability _ingredientAvailability;
+        private readonly OrderSnapshotStore _snapshotStore;
         private readonly ConcurrentDictionary<Guid, StoredOrder> _orders = new();
-        private readonly ConcurrentDictionary<Guid, OrderSnapshot> _snapshots = new();
 
         public OrderApplicationService(
             IKitchenGateway kitchenGateway,
             IDeliveryGateway deliveryGateway,
-            IArchiveGateway archiveGateway)
+            IArchiveGateway archiveGateway,
+            IIngredientAvailability ingredientAvailability)
+            : this(
+                  kitchenGateway,
+                  deliveryGateway,
+                  archiveGateway,
+                  ingredientAvailability,
+                  new OrderSnapshotStore())
+        {
+        }
+
+        internal OrderApplicationService(
+            IKitchenGateway kitchenGateway,
+            IDeliveryGateway deliveryGateway,
+            IArchiveGateway archiveGateway,
+            IIngredientAvailability ingredientAvailability,
+            OrderSnapshotStore snapshotStore)
         {
             _kitchenGateway = kitchenGateway;
             _deliveryGateway = deliveryGateway;
             _archiveGateway = archiveGateway;
+            _ingredientAvailability = ingredientAvailability;
+            _snapshotStore = snapshotStore;
         }
 
         public Result<Guid> CreateOrder(DeliveryAddress deliveryAddress)
@@ -35,16 +55,38 @@ namespace PancakeOrdering.Application
             var order = orderResult.Value!;
 
             _orders[order.OrderId] = new StoredOrder(order, new PerOrderCommandQueue());
-            PublishSnapshot(order.OrderId, order);
+            _snapshotStore.Publish(order.OrderId, order);
 
             return Result.Success(order.OrderId);
         }
 
         public Task<Result<int>> AddPancakeAsync(Guid orderId, Ingredient ingredient) =>
-            EnqueueAsync(orderId, order => Task.FromResult(order.AddPancake(ingredient)));
+            EnqueueAsync(orderId, async order =>
+            {
+                var ingredientResult = ToIngredientType(ingredient);
+                if (!ingredientResult.IsSuccess)
+                    return Result.Failure<int>(ingredientResult.Error!.Value);
+
+                var availabilityResult = await CheckAvailabilityAsync([ingredientResult.Value]);
+                if (!availabilityResult.IsSuccess)
+                    return Result.Failure<int>(availabilityResult.Error!.Value);
+
+                return order.AddPancake(ingredient);
+            });
 
         public Task<Result<int>> AddPancakeAsync(Guid orderId, HashSet<Ingredient> ingredients) =>
-            EnqueueAsync(orderId, order => Task.FromResult(order.AddPancake(ingredients)));
+            EnqueueAsync(orderId, async order =>
+            {
+                var ingredientTypesResult = ToIngredientTypes(ingredients);
+                if (!ingredientTypesResult.IsSuccess)
+                    return Result.Failure<int>(ingredientTypesResult.Error!.Value);
+
+                var availabilityResult = await CheckAvailabilityAsync(ingredientTypesResult.Value!);
+                if (!availabilityResult.IsSuccess)
+                    return Result.Failure<int>(availabilityResult.Error!.Value);
+
+                return order.AddPancake(ingredients);
+            });
 
         public Task<Result> RemovePancakeAsync(Guid orderId, int pancakeId) =>
             EnqueueAsync(orderId, order => Task.FromResult(order.RemovePancake(pancakeId)));
@@ -53,7 +95,18 @@ namespace PancakeOrdering.Application
             EnqueueAsync(orderId, order => Task.FromResult(order.ChangeDeliveryAddress(deliveryAddress)));
 
         public Task<Result> AddIngredientAsync(Guid orderId, int pancakeId, Ingredient ingredient) =>
-            EnqueueAsync(orderId, order => Task.FromResult(order.AddIngredient(pancakeId, ingredient)));
+            EnqueueAsync(orderId, async order =>
+            {
+                var ingredientResult = ToIngredientType(ingredient);
+                if (!ingredientResult.IsSuccess)
+                    return Result.Failure(ingredientResult.Error!.Value);
+
+                var availabilityResult = await CheckAvailabilityAsync([ingredientResult.Value]);
+                if (!availabilityResult.IsSuccess)
+                    return availabilityResult;
+
+                return order.AddIngredient(pancakeId, ingredient);
+            });
 
         public Task<Result> RemoveIngredientAsync(Guid orderId, int pancakeId, Ingredient ingredient) =>
             EnqueueAsync(orderId, order => Task.FromResult(order.RemoveIngredient(pancakeId, ingredient)));
@@ -110,17 +163,13 @@ namespace PancakeOrdering.Application
 
         public Result<OrderStatus> GetStatus(Guid orderId)
         {
-            return TryGetSnapshot(orderId, out var snapshot)
-                ? Result.Success(snapshot.Status)
-                : Result.Failure<OrderStatus>(ErrorCode.OrderNotFound);
+            var snapshotResult = _snapshotStore.GetSnapshot(orderId);
+            return snapshotResult.IsSuccess
+                ? Result.Success(snapshotResult.Value!.Status)
+                : Result.Failure<OrderStatus>(snapshotResult.Error!.Value);
         }
 
-        public Result<OrderSnapshot> GetOrderSnapshot(Guid orderId)
-        {
-            return TryGetSnapshot(orderId, out var snapshot)
-                ? Result.Success(snapshot)
-                : Result.Failure<OrderSnapshot>(ErrorCode.OrderNotFound);
-        }
+        internal OrderSnapshotStore SnapshotStore => _snapshotStore;
 
         private Task<Result> EnqueueAsync(Guid orderId, Func<Order, Task<Result>> operation)
         {
@@ -135,7 +184,7 @@ namespace PancakeOrdering.Application
                 }
                 finally
                 {
-                    PublishSnapshot(orderId, storedOrder.Order);
+                    _snapshotStore.Publish(orderId, storedOrder.Order);
                 }
             });
         }
@@ -153,21 +202,46 @@ namespace PancakeOrdering.Application
                 }
                 finally
                 {
-                    PublishSnapshot(orderId, storedOrder.Order);
+                    _snapshotStore.Publish(orderId, storedOrder.Order);
                 }
             });
         }
 
+        private async Task<Result> CheckAvailabilityAsync(IReadOnlyCollection<IngredientTypeDto> ingredients)
+        {
+            return ingredients.Count == 0
+                ? Result.Success()
+                : await _ingredientAvailability.CheckAvailabilityAsync(ingredients);
+        }
+
+        private static Result<IReadOnlyCollection<IngredientTypeDto>> ToIngredientTypes(HashSet<Ingredient> ingredients)
+        {
+            var result = new List<IngredientTypeDto>();
+            foreach (var ingredient in ingredients)
+            {
+                var ingredientResult = ToIngredientType(ingredient);
+                if (!ingredientResult.IsSuccess)
+                    return Result.Failure<IReadOnlyCollection<IngredientTypeDto>>(ingredientResult.Error!.Value);
+
+                result.Add(ingredientResult.Value);
+            }
+
+            return Result.Success<IReadOnlyCollection<IngredientTypeDto>>(result);
+        }
+
+        private static Result<IngredientTypeDto> ToIngredientType(Ingredient ingredient)
+        {
+            return ingredient switch
+            {
+                Ingredient.Honey => Result.Success(IngredientTypeDto.Honey),
+                Ingredient.Jam => Result.Success(IngredientTypeDto.Jam),
+                Ingredient.Chocolate => Result.Success(IngredientTypeDto.Chocolate),
+                _ => Result.Failure<IngredientTypeDto>(ErrorCode.InternalError)
+            };
+        }
+
         private bool TryGetStoredOrder(Guid orderId, out StoredOrder storedOrder) =>
             _orders.TryGetValue(orderId, out storedOrder!);
-
-        private bool TryGetSnapshot(Guid orderId, out OrderSnapshot snapshot) =>
-            _snapshots.TryGetValue(orderId, out snapshot!);
-
-        private void PublishSnapshot(Guid orderId, Order order)
-        {
-            _snapshots[orderId] = OrderSnapshotFactory.Create(order);
-        }
 
         private sealed class StoredOrder
         {

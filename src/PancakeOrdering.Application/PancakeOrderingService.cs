@@ -1,6 +1,5 @@
 using ContractResults = PancakeOrdering.Contracts.Results;
 using CoreResults = PancakeOrdering.Core.Common.Results;
-using PancakeOrdering.Application.Orders.Snapshots;
 using PancakeOrdering.Application.Ports;
 using PancakeOrdering.Contracts.Dtos;
 using PancakeOrdering.Contracts.Requests;
@@ -12,18 +11,37 @@ namespace PancakeOrdering.Application
     public sealed class PancakeOrderingService : IPancakeOrderingService
     {
         private readonly OrderApplicationService _applicationService;
+        private readonly IOrderQueryService _orderQueryService;
 
         public PancakeOrderingService(
             IKitchenGateway kitchenGateway,
+            IIngredientAvailability ingredientAvailability,
             IDeliveryGateway deliveryGateway,
             IArchiveGateway archiveGateway)
-            : this(new OrderApplicationService(kitchenGateway, deliveryGateway, archiveGateway))
+            : this(CreateComposition(
+                kitchenGateway,
+                ingredientAvailability,
+                deliveryGateway,
+                archiveGateway))
+        {
+        }
+
+        private PancakeOrderingService(ServiceComposition composition)
+            : this(composition.ApplicationService, composition.OrderQueryService)
         {
         }
 
         internal PancakeOrderingService(OrderApplicationService applicationService)
+            : this(applicationService, new OrderQueryService(applicationService.SnapshotStore))
+        {
+        }
+
+        internal PancakeOrderingService(
+            OrderApplicationService applicationService,
+            IOrderQueryService orderQueryService)
         {
             _applicationService = applicationService;
+            _orderQueryService = orderQueryService;
         }
 
         public ContractResults.OperationResult<OrderDto> CreateOrder(CreateOrderRequest request)
@@ -33,8 +51,8 @@ namespace PancakeOrdering.Application
 
             var result = _applicationService.CreateOrder(ToDomainAddress(request.DeliveryAddress));
             return result.IsSuccess
-                ? MapResult(_applicationService.GetOrderSnapshot(result.Value))
-                : ContractResults.OperationResult<OrderDto>.Failure(MapError(result.Error!.Value));
+                ? _orderQueryService.GetOrder(new GetOrderRequest(result.Value))
+                : ContractResults.OperationResult<OrderDto>.Failure(OperationErrorMapper.ToOperationError(result.Error!.Value));
         }
 
         public async Task<ContractResults.OperationResult<OrderDto>> AddPancakeAsync(AddPancakeRequest request)
@@ -131,53 +149,60 @@ namespace PancakeOrdering.Application
         {
             return request == null
                 ? ContractResults.OperationResult<OrderDto>.Failure(ContractResults.OperationErrorCode.InvalidRequest)
-                : MapResult(_applicationService.GetOrderSnapshot(request.OrderId));
+                : _orderQueryService.GetOrder(request);
         }
 
         private async Task<ContractResults.OperationResult<OrderDto>> ExecuteAndProjectAsync(Guid orderId, Task<CoreResults.Result> operation)
         {
             var result = await operation;
             return result.IsSuccess
-                ? MapResult(_applicationService.GetOrderSnapshot(orderId))
-                : ContractResults.OperationResult<OrderDto>.Failure(MapError(result.Error!.Value));
+                ? _orderQueryService.GetOrder(new GetOrderRequest(orderId))
+                : ContractResults.OperationResult<OrderDto>.Failure(OperationErrorMapper.ToOperationError(result.Error!.Value));
         }
 
         private async Task<ContractResults.OperationResult<OrderDto>> ExecuteAndProjectAsync(Guid orderId, Task<CoreResults.Result<int>> operation)
         {
             var result = await operation;
             return result.IsSuccess
-                ? MapResult(_applicationService.GetOrderSnapshot(orderId))
-                : ContractResults.OperationResult<OrderDto>.Failure(MapError(result.Error!.Value));
+                ? _orderQueryService.GetOrder(new GetOrderRequest(orderId))
+                : ContractResults.OperationResult<OrderDto>.Failure(OperationErrorMapper.ToOperationError(result.Error!.Value));
         }
 
-        private static ContractResults.OperationResult<OrderDto> MapResult(CoreResults.Result<OrderSnapshot> result)
+        private static ServiceComposition CreateComposition(
+            IKitchenGateway kitchenGateway,
+            IIngredientAvailability ingredientAvailability,
+            IDeliveryGateway deliveryGateway,
+            IArchiveGateway archiveGateway)
         {
-            return result.IsSuccess
-                ? OrderDtoMapper.ToDto(result.Value!)
-                : ContractResults.OperationResult<OrderDto>.Failure(MapError(result.Error!.Value));
-        }
+            var snapshotStore = new Orders.Snapshots.OrderSnapshotStore();
+            var queryService = new OrderQueryService(snapshotStore);
 
-        private static ContractResults.OperationErrorCode MapError(CoreResults.ErrorCode error)
-        {
-            return error switch
-            {
-                CoreResults.ErrorCode.InternalError => ContractResults.OperationErrorCode.InternalError,
-                CoreResults.ErrorCode.InvalidTransition => ContractResults.OperationErrorCode.InvalidTransition,
-                CoreResults.ErrorCode.OrderMustContainPancake => ContractResults.OperationErrorCode.OrderMustContainPancake,
-                CoreResults.ErrorCode.NoPancakesToRemove => ContractResults.OperationErrorCode.NoPancakesToRemove,
-                CoreResults.ErrorCode.PancakeNotFound => ContractResults.OperationErrorCode.PancakeNotFound,
-                CoreResults.ErrorCode.CannotAddOrRemovePancakeInCurrentState => ContractResults.OperationErrorCode.CannotAddOrRemovePancakeInCurrentState,
-                CoreResults.ErrorCode.DuplicateIngredientAdded => ContractResults.OperationErrorCode.DuplicateIngredientAdded,
-                CoreResults.ErrorCode.IngredientNotFound => ContractResults.OperationErrorCode.IngredientNotFound,
-                CoreResults.ErrorCode.InvalidDeliveryAddress => ContractResults.OperationErrorCode.InvalidDeliveryAddress,
-                CoreResults.ErrorCode.CannotChangeAddressInCurrentState => ContractResults.OperationErrorCode.CannotChangeAddressInCurrentState,
-                CoreResults.ErrorCode.OrderNotFound => ContractResults.OperationErrorCode.OrderNotFound,
-                CoreResults.ErrorCode.KitchenDeclined => ContractResults.OperationErrorCode.KitchenDeclined,
-                _ => ContractResults.OperationErrorCode.InternalError
-            };
+            var applicationService = new OrderApplicationService(
+                kitchenGateway,
+                deliveryGateway,
+                archiveGateway,
+                ingredientAvailability,
+                snapshotStore);
+
+            return new ServiceComposition(applicationService, queryService);
         }
 
         private static DeliveryAddress ToDomainAddress(DeliveryAddressDto? address) =>
             new(address?.Street, address?.City, address?.Country);
+
+        private sealed class ServiceComposition
+        {
+            public ServiceComposition(
+                OrderApplicationService applicationService,
+                IOrderQueryService orderQueryService)
+            {
+                ApplicationService = applicationService;
+                OrderQueryService = orderQueryService;
+            }
+
+            public OrderApplicationService ApplicationService { get; }
+
+            public IOrderQueryService OrderQueryService { get; }
+        }
     }
 }
