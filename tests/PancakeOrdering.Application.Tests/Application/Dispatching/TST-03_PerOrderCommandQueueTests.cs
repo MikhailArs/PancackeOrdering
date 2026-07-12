@@ -4,12 +4,18 @@ using PancakeOrdering.Core.Common.Results;
 
 namespace PancakeOrdering.Application.Tests.Application.Dispatching
 {
+    [TestFixture]
+    [Property("TestSuiteId", "TST-03")]
     public sealed class PerOrderCommandQueueTests
     {
         private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(3);
 
         [Test]
+        [Property("TestId", "TST-03.01")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-6.1")]
+        [Property("Design", "SDD-6.3")]
+        [Property("Design", "SDD-7.2.2")]
         public async Task EnqueueAsync_ExecutesOperationsInFifoOrder()
         {
             var queue = new PerOrderCommandQueue();
@@ -62,8 +68,12 @@ namespace PancakeOrdering.Application.Tests.Application.Dispatching
         }
 
         [Test]
+        [Property("TestId", "TST-03.02")]
         [Property("Requirement", "NFR-4")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-4.6")]
+        [Property("Design", "SDD-6.1")]
+        [Property("Design", "SDD-6.3")]
         public async Task EnqueueAsync_ExceptionDuringFirstTask_ReturnsInternalErrorAndSecondContinues()
         {
             var queue = new PerOrderCommandQueue();

@@ -5,9 +5,15 @@ using PancakeOrdering.Core.Domain.States;
 
 namespace PancakeOrdering.Core.Tests.Domain.Orders
 {
+    [TestFixture]
+    [Property("TestSuiteId", "TST-02")]
     public sealed class OrderLifecycleTests
     {
         [Test]
+        [Property("TestId", "TST-02.01")]
+        [Property("Design", "SDD-5.1")]
+        [Property("Design", "SDD-5.2")]
+        [Property("Design", "SDD-5.3")]
         public void FullValidLifecycle_ReachesArchived()
         {
             var order = CreateOrderWithPancake();
@@ -21,6 +27,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-02.02")]
+        [Property("Design", "SDD-5.2")]
+        [Property("Design", "SDD-5.3")]
         public void Cancel_FromDraft_ChangesStatusToCancelled()
         {
             var order = CreateOrder();
@@ -32,6 +41,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-02.03")]
+        [Property("Design", "SDD-5.2")]
+        [Property("Design", "SDD-5.3")]
         public void Cancel_FromConfirmed_ChangesStatusToCancelled()
         {
             var order = CreateOrderWithPancake();
@@ -45,6 +57,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-02.04")]
+        [Property("Design", "SDD-5.2")]
+        [Property("Design", "SDD-5.3")]
         public void StartPreparation_FromDraft_ReturnsInvalidTransitionAndKeepsDraft()
         {
             var order = CreateOrder();
@@ -57,6 +72,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-02.05")]
+        [Property("Design", "SDD-5.2")]
+        [Property("Design", "SDD-5.3")]
         public void Confirm_FromConfirmed_ReturnsInvalidTransitionAndKeepsConfirmed()
         {
             var order = CreateOrderWithPancake();
@@ -69,20 +87,10 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
             Assert.That(result.Error, Is.EqualTo(ErrorCode.InvalidTransition));
             Assert.That(order.Status, Is.EqualTo(OrderStatus.Confirmed));
         }
-
         [Test]
-        public void Confirm_WithoutPancakes_ReturnsSpecificErrorAndKeepsDraft()
-        {
-            var order = CreateOrder();
-
-            var result = order.Confirm();
-
-            Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.Error, Is.EqualTo(ErrorCode.OrderMustContainPancake));
-            Assert.That(order.Status, Is.EqualTo(OrderStatus.Draft));
-        }
-
-        [Test]
+        [Property("TestId", "TST-02.06")]
+        [Property("Design", "SDD-5.2")]
+        [Property("Design", "SDD-5.3")]
         public void LifecycleOperation_FromCancelled_ReturnsInvalidTransitionAndKeepsCancelled()
         {
             var order = CreateOrder();
@@ -97,6 +105,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-02.07")]
+        [Property("Design", "SDD-5.2")]
+        [Property("Design", "SDD-5.3")]
         public void LifecycleOperation_FromArchived_ReturnsInvalidTransitionAndKeepsArchived()
         {
             var order = CreateOrderWithPancake();
@@ -122,6 +133,8 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [TestCase((int)OrderStatus.Prepared,       (int)OrderAction.StartDelivery,       (int)OrderStatus.OutForDelivery)]
         [TestCase((int)OrderStatus.OutForDelivery, (int)OrderAction.CompleteDelivery,    (int)OrderStatus.Delivered)]
         [TestCase((int)OrderStatus.Delivered,      (int)OrderAction.Archive,             (int)OrderStatus.Archived)]
+        [Property("TestId", "TST-02.08")]
+        [Property("Design", "SDD-5.3")]
         public void TransitionRules_ValidPairsResolveExpectedTarget(
             int status,
             int action,
@@ -137,6 +150,8 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         [TestCase((int)OrderStatus.Confirmed, (int)OrderAction.Confirm)]
         [TestCase((int)OrderStatus.Cancelled, (int)OrderAction.Confirm)]
         [TestCase((int)OrderStatus.Archived,  (int)OrderAction.Cancel)]
+        [Property("TestId", "TST-02.09")]
+        [Property("Design", "SDD-5.3")]
         public void TransitionRules_InvalidPairsDoNotResolve(int status, int action)
         {
             var resolved = OrderStateTransitions.TryResolve((OrderStatus)status, (OrderAction)action, out _);

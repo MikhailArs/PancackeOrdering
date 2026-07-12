@@ -10,12 +10,17 @@ using PancakeOrdering.Infrastructure.Kitchen;
 
 namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
 {
+    [TestFixture]
+    [Property("TestSuiteId", "TST-06")]
     public sealed class InMemoryKitchenTests
     {
         [Test]
+        [Property("TestId", "TST-06.01")]
         [Property("Requirement", "FR-8")]
         [Property("Requirement", "FR-9")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-3.3")]
+        [Property("Design", "SDD-6.8.2")]
         public async Task DraftAvailability_DoesNotConsumeStock()
         {
             var composition = CreateComposition(new Dictionary<IngredientTypeDto, int>
@@ -41,9 +46,12 @@ namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
         }
 
         [Test]
+        [Property("TestId", "TST-06.02")]
         [Property("Requirement", "FR-8")]
         [Property("Requirement", "FR-9")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-3.3")]
+        [Property("Design", "SDD-6.8.2")]
         public async Task UnavailableIngredient_PreventsDraftModification()
         {
             var composition = CreateComposition(new Dictionary<IngredientTypeDto, int>
@@ -74,8 +82,11 @@ namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
         }
 
         [Test]
+        [Property("TestId", "TST-06.03")]
         [Property("Requirement", "FR-4")]
         [Property("Requirement", "NFR-3")]
+        [Property("Design", "SDD-4.11")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task AcceptOrder_PullsOrderDtoByOrderId()
         {
             var orderId = Guid.NewGuid();
@@ -99,9 +110,11 @@ namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
         }
 
         [Test]
+        [Property("TestId", "TST-06.04")]
         [Property("Requirement", "FR-3")]
         [Property("Requirement", "FR-4")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task Confirm_WhenKitchenAccepts_ConsumesStock()
         {
             var composition = CreateComposition(new Dictionary<IngredientTypeDto, int>
@@ -119,8 +132,11 @@ namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
         }
 
         [Test]
+        [Property("TestId", "TST-06.05")]
         [Property("Requirement", "FR-4")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-6.8.2")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task InMemoryKitchen_MayProvideKitchenAndAvailabilityCapabilities()
         {
             var snapshotStore = new OrderSnapshotStore();
@@ -153,9 +169,11 @@ namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
         }
 
         [Test]
+        [Property("TestId", "TST-06.06")]
         [Property("Requirement", "FR-3")]
         [Property("Requirement", "FR-4")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task Confirm_WhenKitchenRunsOutOfStock_DeclinesWithoutNegativeInventory()
         {
             var composition = CreateComposition(new Dictionary<IngredientTypeDto, int>
@@ -181,8 +199,10 @@ namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
         }
 
         [Test]
+        [Property("TestId", "TST-06.07")]
         [Property("Requirement", "FR-4")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task AcceptOrder_WhenOneIngredientIsUnavailable_DeductsNothing()
         {
             var composition = CreateComposition(
@@ -209,9 +229,12 @@ namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
         }
 
         [Test]
+        [Property("TestId", "TST-06.08")]
         [Property("Requirement", "FR-4")]
         [Property("Requirement", "FR-10")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-6.7")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task ConcurrentConfirmations_CannotOverConsumeStock()
         {
             var composition = CreateComposition(new Dictionary<IngredientTypeDto, int>
@@ -237,12 +260,16 @@ namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
         }
 
         [Test]
+        [Property("TestId", "TST-06.09")]
         [Property("Requirement", "FR-1")]
         [Property("Requirement", "FR-3")]
         [Property("Requirement", "FR-4")]
         [Property("Requirement", "FR-5")]
         [Property("Requirement", "FR-6")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-5.3")]
+        [Property("Design", "SDD-6.4")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task MainFlow_WithEnoughKitchenStock_ReachesArchived()
         {
             var composition = CreateComposition(new Dictionary<IngredientTypeDto, int>
@@ -270,9 +297,11 @@ namespace PancakeOrdering.Application.Tests.Infrastructure.Kitchen
         }
 
         [Test]
+        [Property("TestId", "TST-06.10")]
         [Property("Requirement", "FR-8")]
         [Property("Requirement", "FR-9")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-6.8.2")]
         public async Task RemovingDraftItems_DoesNotRestoreStock()
         {
             var composition = CreateComposition(new Dictionary<IngredientTypeDto, int>

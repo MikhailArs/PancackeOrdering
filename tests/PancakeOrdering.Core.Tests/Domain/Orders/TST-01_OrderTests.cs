@@ -4,9 +4,14 @@ using PancakeOrdering.Core.Domain.Orders;
 
 namespace PancakeOrdering.Core.Tests.Domain.Orders
 {
+    [TestFixture]
+    [Property("TestSuiteId", "TST-01")]
     public sealed class OrderTests
     {
         [Test]
+        [Property("TestId", "TST-01.01")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-5.2")]
         public void Confirm_WithOnePancake_ChangesStatusToConfirmed()
         {
             var order = CreateOrder();
@@ -21,6 +26,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.02")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-5.2")]
         public void Confirm_WithoutPancakes_ReturnsFailureAndKeepsDraftStatus()
         {
             var order = CreateOrder();
@@ -35,6 +43,10 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
         
         [Test]
+        [Property("TestId", "TST-01.03")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-3.2")]
+        [Property("Design", "SDD-5.2")]
         public void AddPancake_OnDraftState_PancakeAdded()
         {
             var order = CreateOrder();
@@ -47,6 +59,10 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
         
         [Test]
+        [Property("TestId", "TST-01.04")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-3.2")]
+        [Property("Design", "SDD-5.2")]
         public void RemovePancake_OnDraftState_PancakeRemoved()
         {
             var order = CreateOrder();
@@ -63,6 +79,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.05")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-3.2")]
         public void RemoveNonExistingPancake_OnDraftState_PancakeAdded()
         {
             var order = CreateOrder();
@@ -82,6 +101,10 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.06")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-3.2")]
+        [Property("Design", "SDD-5.2")]
         public void RemovePancake_OnConfirmedState_ReturnsFailure()
         {
             var order = CreateOrder();
@@ -102,6 +125,10 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.07")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-3.2")]
+        [Property("Design", "SDD-5.2")]
         public void AddPancake_OnConfirmedState_ReturnsFailure()
         {
             var order = CreateOrder();
@@ -119,6 +146,10 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.08")]
+        [Property("Design", "SDD-3.2")]
+        [Property("Design", "SDD-3.3")]
+        [Property("Design", "SDD-5.2")]
         public void AddIngredient_OnDraftState_AddsIngredient()
         {
             var order = CreateOrder();
@@ -131,6 +162,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.09")]
+        [Property("Design", "SDD-3.2")]
+        [Property("Design", "SDD-3.3")]
         public void AddIngredient_WhenAlreadyExists_ReturnsFailure()
         {
             var order = CreateOrder();
@@ -144,6 +178,10 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.10")]
+        [Property("Design", "SDD-3.2")]
+        [Property("Design", "SDD-3.3")]
+        [Property("Design", "SDD-5.2")]
         public void RemoveIngredient_OnDraftState_RemovesIngredient()
         {
             var order = CreateOrder();
@@ -157,6 +195,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.11")]
+        [Property("Design", "SDD-3.2")]
+        [Property("Design", "SDD-3.3")]
         public void RemoveIngredient_WhenIngredientDoesNotExist_ReturnsFailure()
         {
             var order = CreateOrder();
@@ -169,6 +210,10 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.12")]
+        [Property("Design", "SDD-3.2")]
+        [Property("Design", "SDD-3.3")]
+        [Property("Design", "SDD-5.2")]
         public void ModifyIngredients_OnConfirmedOrder_ReturnsFailure()
         {
             var order = CreateOrder();
@@ -188,6 +233,8 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.13")]
+        [Property("Design", "SDD-3.1")]
         public void CreateOrder_WithValidAddress_AddressStored()
         {
             var address = new DeliveryAddress("Main Street", "Tel Aviv", "Israel");
@@ -201,6 +248,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.14")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-5.2")]
         public void ChangeAddress_OnDraftState_AddressChanged()
         {
             var order = CreateOrder();
@@ -215,6 +265,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.15")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-5.2")]
         public void ChangeAddress_OnConfirmedOrder_ReturnsFailure()
         {
             var order = CreateOrder();
@@ -231,6 +284,8 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.16")]
+        [Property("Design", "SDD-3.1")]
         public void CreateAddress_WithNullField_ReturnsFailure()
         {
             var address = new DeliveryAddress(null, "Tel Aviv", "Israel");
@@ -242,6 +297,9 @@ namespace PancakeOrdering.Core.Tests.Domain.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-01.17")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-5.2")]
         public void ChangeAddress_WithInvalidAddress_ReturnsFailureAndKeepsCurrentAddress()
         {
             var order = CreateOrder();

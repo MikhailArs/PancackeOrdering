@@ -9,12 +9,17 @@ using PancakeOrdering.Core.Domain.Orders;
 
 namespace PancakeOrdering.Application.Tests.Application.Orders
 {
+    [TestFixture]
+    [Property("TestSuiteId", "TST-04")]
     public sealed class OrderApplicationServiceTests
     {
         private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(3);
 
         [Test]
+        [Property("TestId", "TST-04.01")]
         [Property("Requirement", "FR-1")]
+        [Property("Design", "SDD-3.1")]
+        [Property("Design", "SDD-6.2")]
         public void CreateOrder_ReturnsStableNonEmptyUniqueIds()
         {
             var service = CreateService();
@@ -30,7 +35,10 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.02")]
         [Property("Requirement", "NFR-4")]
+        [Property("Design", "SDD-4.5")]
+        [Property("Design", "SDD-4.6")]
         public async Task Command_WithUnknownOrder_ReturnsOrderNotFound()
         {
             var service = CreateService();
@@ -42,8 +50,11 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.03")]
         [Property("Requirement", "FR-3")]
         [Property("Requirement", "FR-4")]
+        [Property("Design", "SDD-6.4")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task Confirm_WhenKitchenAccepts_ConfirmsOrder()
         {
             var kitchen = new KitchenGatewayFake();
@@ -60,7 +71,10 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.04")]
         [Property("Requirement", "FR-3")]
+        [Property("Design", "SDD-5.2")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task Confirm_WhenDraftOrderIsEmpty_DoesNotCallKitchen()
         {
             var kitchen = new KitchenGatewayFake();
@@ -77,8 +91,11 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.05")]
         [Property("Requirement", "FR-3")]
         [Property("Requirement", "FR-4")]
+        [Property("Design", "SDD-6.4")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task Confirm_WhenKitchenDeclines_KeepsOrderDraft()
         {
             var kitchen = new KitchenGatewayFake(_ => Task.FromResult(Result.Failure(ErrorCode.KitchenDeclined)));
@@ -95,12 +112,16 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.06")]
         [Property("Requirement", "FR-1")]
         [Property("Requirement", "FR-3")]
         [Property("Requirement", "FR-4")]
         [Property("Requirement", "FR-5")]
         [Property("Requirement", "FR-6")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-5.3")]
+        [Property("Design", "SDD-6.4")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task MainLifecycle_WithAcceptedKitchen_ReachesArchived()
         {
             var kitchen = new KitchenGatewayFake();
@@ -142,7 +163,10 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.07")]
         [Property("Requirement", "FR-5")]
+        [Property("Design", "SDD-4.2")]
+        [Property("Design", "SDD-6.4")]
         public async Task CompletePreparation_WhenValid_SubmitsOrderToDelivery()
         {
             var delivery = new DeliveryGatewayFake();
@@ -159,7 +183,10 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.08")]
         [Property("Requirement", "FR-5")]
+        [Property("Design", "SDD-5.3")]
+        [Property("Design", "SDD-6.4")]
         public async Task CompletePreparation_WhenTransitionIsInvalid_DoesNotCallDelivery()
         {
             var delivery = new DeliveryGatewayFake();
@@ -176,7 +203,9 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.09")]
         [Property("Requirement", "FR-5")]
+        [Property("Design", "SDD-6.4")]
         public async Task CompletePreparation_WhenDeliverySubmissionFails_LeavesOrderPrepared()
         {
             var delivery = new DeliveryGatewayFake(_ => Task.FromResult(Result.Failure(ErrorCode.DeliveryFailed)));
@@ -194,8 +223,11 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.10")]
         [Property("Requirement", "FR-5")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-6.1")]
+        [Property("Design", "SDD-6.4")]
         public async Task CompletePreparation_WaitsForDeliverySubmissionBeforeNextOrderCommand()
         {
             var delivery = new ControlledDeliveryGateway();
@@ -221,7 +253,9 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.11")]
         [Property("Requirement", "FR-5")]
+        [Property("Design", "SDD-5.3")]
         public async Task CompleteDelivery_WhenValid_EndsInDelivered()
         {
             var archive = new ArchiveGatewayFake();
@@ -238,7 +272,10 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.12")]
         [Property("Requirement", "FR-6")]
+        [Property("Design", "SDD-5.3")]
+        [Property("Design", "SDD-6.4")]
         public async Task CompleteDelivery_WhenTransitionIsInvalid_DoesNotArchive()
         {
             var archive = new ArchiveGatewayFake();
@@ -256,7 +293,10 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.13")]
         [Property("Requirement", "FR-6")]
+        [Property("Design", "SDD-4.2")]
+        [Property("Design", "SDD-6.4")]
         public async Task Archive_WhenGatewaySucceeds_ReachesArchived()
         {
             var archive = new ArchiveGatewayFake();
@@ -274,7 +314,10 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.14")]
         [Property("Requirement", "FR-6")]
+        [Property("Design", "SDD-5.3")]
+        [Property("Design", "SDD-6.4")]
         public async Task Archive_WhenTransitionIsInvalid_DoesNotCallGateway()
         {
             var archive = new ArchiveGatewayFake();
@@ -292,7 +335,9 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.15")]
         [Property("Requirement", "FR-6")]
+        [Property("Design", "SDD-6.4")]
         public async Task Archive_WhenGatewayFails_LeavesOrderDelivered()
         {
             var archive = new ArchiveGatewayFake(_ => Task.FromResult(Result.Failure(ErrorCode.ArchiveFailed)));
@@ -310,8 +355,11 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.16")]
         [Property("Requirement", "FR-6")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-6.1")]
+        [Property("Design", "SDD-6.4")]
         public async Task Archive_WaitsForGatewayBeforeNextOrderCommand()
         {
             var archive = new ControlledArchiveGateway();
@@ -342,7 +390,12 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.17")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-6.1")]
+        [Property("Design", "SDD-6.4")]
+        [Property("Design", "SDD-6.8.3")]
+        [Property("Design", "SDD-7.2.2")]
         public async Task SameOrder_WaitsForCompletePreviousCommandIncludingKitchen()
         {
             var kitchen = new ControlledKitchenGateway();
@@ -372,7 +425,9 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.18")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-6.5")]
         public async Task DifferentOrders_ExecuteConcurrently()
         {
             var kitchen = new ControlledKitchenGateway();
@@ -406,7 +461,11 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
         }
 
         [Test]
+        [Property("TestId", "TST-04.19")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-6.1")]
+        [Property("Design", "SDD-6.4")]
+        [Property("Design", "SDD-7.2.2")]
         public async Task CompetingCustomerAndKitchenCommands_FollowEnqueueOrder()
         {
             var service = CreateService();

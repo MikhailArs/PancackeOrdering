@@ -10,11 +10,16 @@ using PancakeOrdering.Contracts.Services;
 
 namespace PancakeOrdering.Application.Tests.Application.PublicApi
 {
+    [TestFixture]
+    [Property("TestSuiteId", "TST-05")]
     public sealed class PancakeOrderingServiceTests
     {
         [Test]
+        [Property("TestId", "TST-05.01")]
         [Property("Requirement", "NFR-3")]
         [Property("Requirement", "NFR-6")]
+        [Property("Design", "SDD-2")]
+        [Property("Design", "SDD-4.7")]
         public void ProjectReferences_FollowRequiredDependencyDirection()
         {
             var contractsReferences = GetProjectReferences("src/PancakeOrdering.Contracts/PancakeOrdering.Contracts.csproj");
@@ -39,7 +44,9 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.02")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-6.8.2")]
         public void PublicConstructor_RequiresExplicitIngredientAvailability()
         {
             var constructor = typeof(PancakeOrderingService).GetConstructor(new[]
@@ -63,8 +70,11 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.03")]
         [Property("Requirement", "FR-10")]
         [Property("Requirement", "NFR-3")]
+        [Property("Design", "SDD-4.11")]
+        [Property("Design", "SDD-6.8.2")]
         public async Task KitchenGateway_DoesNotNeedToImplementIngredientAvailability()
         {
             var kitchen = new KitchenGatewayFake();
@@ -86,7 +96,9 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.04")]
         [Property("Requirement", "FR-10")]
+        [Property("Design", "SDD-6.8.2")]
         public async Task AvailabilityFailure_IsRespectedBeforeDraftMutation()
         {
             var kitchen = new KitchenGatewayFake();
@@ -111,9 +123,14 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.05")]
         [Property("Requirement", "FR-1")]
         [Property("Requirement", "NFR-2")]
         [Property("Requirement", "NFR-3")]
+        [Property("Design", "SDD-4.8")]
+        [Property("Design", "SDD-4.9")]
+        [Property("Design", "SDD-4.11")]
+        [Property("Design", "SDD-6.2")]
         public void CreateOrder_ReturnsDraftOrderDtoAndGetOrderReturnsSameOrder()
         {
             var service = CreateService();
@@ -134,8 +151,12 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.06")]
         [Property("Requirement", "NFR-2")]
         [Property("Requirement", "NFR-4")]
+        [Property("Design", "SDD-4.5")]
+        [Property("Design", "SDD-4.8")]
+        [Property("Design", "SDD-4.11")]
         public void GetOrder_WhenOrderDoesNotExist_ReturnsTypedOrderNotFound()
         {
             var service = CreateService();
@@ -148,8 +169,11 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.07")]
         [Property("Requirement", "FR-8")]
         [Property("Requirement", "NFR-3")]
+        [Property("Design", "SDD-4.8")]
+        [Property("Design", "SDD-4.9")]
         public async Task AddPancake_WithNoIngredients_ReturnsOrderDtoWithEmptyPancake()
         {
             var service = CreateService();
@@ -164,9 +188,13 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.08")]
         [Property("Requirement", "FR-8")]
         [Property("Requirement", "FR-9")]
         [Property("Requirement", "NFR-3")]
+        [Property("Design", "SDD-4.8")]
+        [Property("Design", "SDD-4.9")]
+        [Property("Design", "SDD-6.8.2")]
         public async Task AddPancake_WithIngredients_MapsIngredientsToDto()
         {
             var service = CreateService();
@@ -184,7 +212,9 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.09")]
         [Property("Requirement", "FR-8")]
+        [Property("Design", "SDD-4.8")]
         public async Task RemovePancake_ReturnsOrderDtoWithoutRemovedPancake()
         {
             var service = CreateService();
@@ -199,7 +229,10 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.10")]
         [Property("Requirement", "FR-9")]
+        [Property("Design", "SDD-3.3")]
+        [Property("Design", "SDD-4.8")]
         public async Task AddAndRemoveIngredient_ReturnUpdatedOrderDto()
         {
             var service = CreateService();
@@ -219,7 +252,10 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.11")]
         [Property("Requirement", "FR-2")]
+        [Property("Design", "SDD-4.8")]
+        [Property("Design", "SDD-5.2")]
         public async Task ChangeDeliveryAddress_ReturnsUpdatedAddressAndFailsAfterConfirmation()
         {
             var service = CreateService();
@@ -240,8 +276,11 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.12")]
         [Property("Requirement", "FR-3")]
         [Property("Requirement", "FR-4")]
+        [Property("Design", "SDD-4.8")]
+        [Property("Design", "SDD-6.8.3")]
         public async Task ConfirmOrder_WithAcceptingKitchen_ReturnsConfirmedOrderDto()
         {
             var kitchen = new KitchenGatewayFake();
@@ -257,7 +296,10 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.13")]
         [Property("Requirement", "FR-7")]
+        [Property("Design", "SDD-4.8")]
+        [Property("Design", "SDD-5.3")]
         public async Task CancelOrder_WhenValid_ReturnsCancelledOrderDto()
         {
             var service = CreateService();
@@ -270,7 +312,10 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.14")]
         [Property("Requirement", "NFR-4")]
+        [Property("Design", "SDD-4.4")]
+        [Property("Design", "SDD-4.5")]
         public async Task AddPancake_WithInvalidPublicIngredient_ReturnsTypedFailureAndLeavesOrderUnchanged()
         {
             var service = CreateService();
@@ -287,9 +332,12 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.15")]
         [Property("Requirement", "FR-5")]
         [Property("Requirement", "NFR-2")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-4.11")]
+        [Property("Design", "SDD-6.4")]
         public async Task GetOrder_DuringIncompleteCommand_ReturnsPreviousPublishedSnapshot()
         {
             var delivery = new ControlledDeliveryGateway();
@@ -317,8 +365,11 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.16")]
         [Property("Requirement", "FR-5")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-4.11")]
+        [Property("Design", "SDD-6.4")]
         public async Task GetOrder_AfterFailedCommandThatMutatedOrder_ReturnsUpdatedSnapshot()
         {
             var delivery = new DeliveryGatewayFake(_ => Task.FromResult(CoreResults.Result.Failure(CoreResults.ErrorCode.DeliveryFailed)));
@@ -336,9 +387,12 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.17")]
         [Property("Requirement", "FR-9")]
         [Property("Requirement", "NFR-3")]
         [Property("Requirement", "NFR-5")]
+        [Property("Design", "SDD-4.11")]
+        [Property("Design", "SDD-6.4")]
         public async Task PreviouslyReturnedDto_DoesNotChangeAfterLaterCommand()
         {
             var service = CreateService();
@@ -362,7 +416,10 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.18")]
         [Property("Requirement", "NFR-3")]
+        [Property("Design", "SDD-4.9")]
+        [Property("Design", "SDD-4.11")]
         public async Task OrderDto_CollectionsAreRuntimeReadOnlyCollections()
         {
             var service = CreateService();
@@ -381,7 +438,9 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.19")]
         [Property("Requirement", "NFR-3")]
+        [Property("Design", "SDD-4.11")]
         public void ApplicationSnapshotQuery_DoesNotReturnMutableOrder()
         {
             var mutableOrderTypeName = "PancakeOrdering.Core.Domain.Orders.Order";
@@ -396,7 +455,10 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.20")]
         [Property("Requirement", "NFR-3")]
+        [Property("Design", "SDD-4.1")]
+        [Property("Design", "SDD-4.9")]
         public void PublicContractsGraph_DoesNotExposeCoreTypes()
         {
             var visited = new HashSet<Type>();
@@ -408,7 +470,10 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         }
 
         [Test]
+        [Property("TestId", "TST-05.21")]
         [Property("Requirement", "NFR-2")]
+        [Property("Design", "SDD-4.8")]
+        [Property("Design", "SDD-4.11")]
         public void GetOrder_IsSynchronous()
         {
             var method = typeof(IOrderQueryService).GetMethod(nameof(IOrderQueryService.GetOrder));

@@ -174,6 +174,9 @@ Tests use requirement metadata:
 [Property("Requirement", "FR-10")]
 ```
 
+Detailed requirement-to-design-to-test coverage is available in:
+`docs/PancakeOrdering_Traceability.md`
+
 ## Build
 
 ```bash
