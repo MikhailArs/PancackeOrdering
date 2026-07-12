@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using PancakeOrdering.Application;
 using PancakeOrdering.Application.Ports;
 using PancakeOrdering.Contracts.Dtos;
+using PancakeOrdering.Contracts.Requests;
 using PancakeOrdering.Core.Common.Results;
 using PancakeOrdering.Core.Domain.Enums;
 using PancakeOrdering.Core.Domain.Orders;
@@ -114,9 +115,10 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             var completePreparationResult = await service.CompletePreparationAsync(orderId);
             var startDeliveryResult = await service.StartDeliveryAsync(orderId);
             var completeDeliveryResult = await service.CompleteDeliveryAsync(orderId);
-            var deliveredStatus = service.GetStatus(orderId);
+            var queryService = CreateQueryService(service);
+            var deliveredOrder = queryService.GetOrder(new GetOrderRequest(orderId));
             var archiveResult = await service.ArchiveAsync(orderId);
-            var archivedStatus = service.GetStatus(orderId);
+            var archivedOrder = queryService.GetOrder(new GetOrderRequest(orderId));
             var cancelResult = await service.CancelAsync(orderId);
 
             Assert.That(addPancakeResult.IsSuccess, Is.True);
@@ -128,13 +130,13 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             Assert.That(kitchen.CallCount, Is.EqualTo(1));
             Assert.That(delivery.CallCount, Is.EqualTo(1));
             Assert.That(delivery.OrderIds, Is.EqualTo(new[] { orderId }));
-            Assert.That(deliveredStatus.IsSuccess, Is.True);
-            Assert.That(deliveredStatus.Value, Is.EqualTo(OrderStatus.Delivered));
+            Assert.That(deliveredOrder.IsSuccess, Is.True);
+            Assert.That(deliveredOrder.Value!.Status, Is.EqualTo(OrderStatusDto.Delivered));
             Assert.That(archive.CallCount, Is.EqualTo(1));
             Assert.That(archive.OrderIds, Is.EqualTo(new[] { orderId }));
             Assert.That(archiveResult.IsSuccess, Is.True);
-            Assert.That(archivedStatus.IsSuccess, Is.True);
-            Assert.That(archivedStatus.Value, Is.EqualTo(OrderStatus.Archived));
+            Assert.That(archivedOrder.IsSuccess, Is.True);
+            Assert.That(archivedOrder.Value!.Status, Is.EqualTo(OrderStatusDto.Archived));
             Assert.That(cancelResult.IsSuccess, Is.False);
             Assert.That(cancelResult.Error, Is.EqualTo(ErrorCode.InvalidTransition));
         }
@@ -182,13 +184,13 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             var orderId = await CreatePreparingOrderAsync(service);
 
             var result = await service.CompletePreparationAsync(orderId);
-            var status = service.GetStatus(orderId);
+            var order = CreateQueryService(service).GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.Error, Is.EqualTo(ErrorCode.DeliveryFailed));
             Assert.That(delivery.CallCount, Is.EqualTo(1));
-            Assert.That(status.IsSuccess, Is.True);
-            Assert.That(status.Value, Is.EqualTo(OrderStatus.Prepared));
+            Assert.That(order.IsSuccess, Is.True);
+            Assert.That(order.Value!.Status, Is.EqualTo(OrderStatusDto.Prepared));
         }
 
         [Test]
@@ -227,11 +229,11 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             var orderId = await CreateOutForDeliveryOrderAsync(service);
 
             var result = await service.CompleteDeliveryAsync(orderId);
-            var status = service.GetStatus(orderId);
+            var order = CreateQueryService(service).GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(result.IsSuccess, Is.True);
-            Assert.That(status.IsSuccess, Is.True);
-            Assert.That(status.Value, Is.EqualTo(OrderStatus.Delivered));
+            Assert.That(order.IsSuccess, Is.True);
+            Assert.That(order.Value!.Status, Is.EqualTo(OrderStatusDto.Delivered));
             Assert.That(archive.CallCount, Is.EqualTo(0));
         }
 
@@ -244,12 +246,12 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             var orderId = await CreatePreparedOrderAsync(service);
 
             var result = await service.CompleteDeliveryAsync(orderId);
-            var status = service.GetStatus(orderId);
+            var order = CreateQueryService(service).GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.Error, Is.EqualTo(ErrorCode.InvalidTransition));
-            Assert.That(status.IsSuccess, Is.True);
-            Assert.That(status.Value, Is.EqualTo(OrderStatus.Prepared));
+            Assert.That(order.IsSuccess, Is.True);
+            Assert.That(order.Value!.Status, Is.EqualTo(OrderStatusDto.Prepared));
             Assert.That(archive.CallCount, Is.EqualTo(0));
         }
 
@@ -262,13 +264,13 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             var orderId = await CreateDeliveredOrderAsync(service);
 
             var result = await service.ArchiveAsync(orderId);
-            var status = service.GetStatus(orderId);
+            var order = CreateQueryService(service).GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(archive.CallCount, Is.EqualTo(1));
             Assert.That(archive.OrderIds, Is.EqualTo(new[] { orderId }));
             Assert.That(result.IsSuccess, Is.True);
-            Assert.That(status.IsSuccess, Is.True);
-            Assert.That(status.Value, Is.EqualTo(OrderStatus.Archived));
+            Assert.That(order.IsSuccess, Is.True);
+            Assert.That(order.Value!.Status, Is.EqualTo(OrderStatusDto.Archived));
         }
 
         [Test]
@@ -280,13 +282,13 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             var orderId = await CreatePreparedOrderAsync(service);
 
             var result = await service.ArchiveAsync(orderId);
-            var status = service.GetStatus(orderId);
+            var order = CreateQueryService(service).GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.Error, Is.EqualTo(ErrorCode.InvalidTransition));
             Assert.That(archive.CallCount, Is.EqualTo(0));
-            Assert.That(status.IsSuccess, Is.True);
-            Assert.That(status.Value, Is.EqualTo(OrderStatus.Prepared));
+            Assert.That(order.IsSuccess, Is.True);
+            Assert.That(order.Value!.Status, Is.EqualTo(OrderStatusDto.Prepared));
         }
 
         [Test]
@@ -298,13 +300,13 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             var orderId = await CreateDeliveredOrderAsync(service);
 
             var result = await service.ArchiveAsync(orderId);
-            var status = service.GetStatus(orderId);
+            var order = CreateQueryService(service).GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.Error, Is.EqualTo(ErrorCode.ArchiveFailed));
             Assert.That(archive.CallCount, Is.EqualTo(1));
-            Assert.That(status.IsSuccess, Is.True);
-            Assert.That(status.Value, Is.EqualTo(OrderStatus.Delivered));
+            Assert.That(order.IsSuccess, Is.True);
+            Assert.That(order.Value!.Status, Is.EqualTo(OrderStatusDto.Delivered));
         }
 
         [Test]
@@ -329,14 +331,14 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
 
             var archiveResult = await WaitForAsync(archiveTask);
             var secondArchiveResult = await WaitForAsync(secondArchiveTask);
-            var status = service.GetStatus(orderId);
+            var order = CreateQueryService(service).GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(archiveResult.IsSuccess, Is.True);
             Assert.That(secondArchiveResult.IsSuccess, Is.False);
             Assert.That(secondArchiveResult.Error, Is.EqualTo(ErrorCode.InvalidTransition));
             Assert.That(archive.CallCount, Is.EqualTo(1));
-            Assert.That(status.IsSuccess, Is.True);
-            Assert.That(status.Value, Is.EqualTo(OrderStatus.Archived));
+            Assert.That(order.IsSuccess, Is.True);
+            Assert.That(order.Value!.Status, Is.EqualTo(OrderStatusDto.Archived));
         }
 
         [Test]
@@ -450,6 +452,9 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
 
         private static DeliveryAddress CreateAddress() =>
             new("Main Street", "Tel Aviv", "Israel");
+
+        private static OrderQueryService CreateQueryService(OrderApplicationService service) =>
+            new(service.SnapshotStore);
 
         private static Guid CreateOrder(OrderApplicationService service)
         {

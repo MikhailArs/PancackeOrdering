@@ -161,14 +161,6 @@ namespace PancakeOrdering.Application
                 return order.Archive();
             });
 
-        public Result<OrderStatus> GetStatus(Guid orderId)
-        {
-            var snapshotResult = _snapshotStore.GetSnapshot(orderId);
-            return snapshotResult.IsSuccess
-                ? Result.Success(snapshotResult.Value!.Status)
-                : Result.Failure<OrderStatus>(snapshotResult.Error!.Value);
-        }
-
         internal OrderSnapshotStore SnapshotStore => _snapshotStore;
 
         private Task<Result> EnqueueAsync(Guid orderId, Func<Order, Task<Result>> operation)
