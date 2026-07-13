@@ -18,20 +18,6 @@ namespace PancakeOrdering.Application
         private readonly OrderSnapshotStore _snapshotStore;
         private readonly ConcurrentDictionary<Guid, StoredOrder> _orders = new();
 
-        public OrderApplicationService(
-            IKitchenGateway kitchenGateway,
-            IDeliveryGateway deliveryGateway,
-            IArchiveGateway archiveGateway,
-            IIngredientAvailability ingredientAvailability)
-            : this(
-                  kitchenGateway,
-                  deliveryGateway,
-                  archiveGateway,
-                  ingredientAvailability,
-                  new OrderSnapshotStore())
-        {
-        }
-
         internal OrderApplicationService(
             IKitchenGateway kitchenGateway,
             IDeliveryGateway deliveryGateway,

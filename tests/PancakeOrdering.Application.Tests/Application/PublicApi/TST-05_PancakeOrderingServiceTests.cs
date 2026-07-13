@@ -1,12 +1,13 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Xml.Linq;
-using ContractResults = PancakeOrdering.Contracts.Results;
-using CoreResults = PancakeOrdering.Core.Common.Results;
+using PancakeOrdering.Application.Orders.Snapshots;
 using PancakeOrdering.Application.Ports;
 using PancakeOrdering.Contracts.Dtos;
 using PancakeOrdering.Contracts.Requests;
+using PancakeOrdering.Contracts.Results;
 using PancakeOrdering.Contracts.Services;
+using PancakeOrdering.Core.Common.Results;
 
 namespace PancakeOrdering.Application.Tests.Application.PublicApi
 {
@@ -47,7 +48,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         [Property("TestId", "TST-05.02")]
         [Property("Requirement", "FR-10")]
         [Property("Design", "SDD-6.8.2")]
-        public void PublicConstructor_RequiresExplicitIngredientAvailability()
+        public void PublicConstructor_DoesNotComposeApplicationPorts()
         {
             var constructor = typeof(PancakeOrderingService).GetConstructor(new[]
             {
@@ -63,7 +64,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
                 typeof(IArchiveGateway)
             });
 
-            Assert.That(constructor, Is.Not.Null);
+            Assert.That(constructor, Is.Null);
             Assert.That(oldConstructor, Is.Null);
             Assert.That(typeof(IKitchenGateway).IsAssignableFrom(typeof(IIngredientAvailability)), Is.False);
             Assert.That(typeof(IIngredientAvailability).IsAssignableFrom(typeof(IKitchenGateway)), Is.False);
@@ -79,11 +80,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         {
             var kitchen = new KitchenGatewayFake();
             var availability = new IngredientAvailabilityFake();
-            var service = new PancakeOrderingService(
-                kitchen,
-                availability,
-                new DeliveryGatewayFake(),
-                new ArchiveGatewayFake());
+            var service = CreateService(kitchen, availability);
             var orderId = CreateOrder(service);
 
             var result = await service.AddPancakeAsync(
@@ -102,12 +99,8 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         public async Task AvailabilityFailure_IsRespectedBeforeDraftMutation()
         {
             var kitchen = new KitchenGatewayFake();
-            var availability = new IngredientAvailabilityFake(CoreResults.Result.Failure(CoreResults.ErrorCode.IngredientUnavailable));
-            var service = new PancakeOrderingService(
-                kitchen,
-                availability,
-                new DeliveryGatewayFake(),
-                new ArchiveGatewayFake());
+            var availability = new IngredientAvailabilityFake(Result.Failure(ErrorCode.IngredientUnavailable));
+            var service = CreateService(kitchen, availability);
             var orderId = CreateOrder(service);
 
             var result = await service.AddPancakeAsync(
@@ -115,7 +108,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             var orderResult = service.GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.Error, Is.EqualTo(ContractResults.OperationErrorCode.IngredientUnavailable));
+            Assert.That(result.Error, Is.EqualTo(OperationErrorCode.IngredientUnavailable));
             Assert.That(orderResult.IsSuccess, Is.True);
             Assert.That(orderResult.Value!.Pancakes, Is.Empty);
             Assert.That(availability.CallCount, Is.EqualTo(1));
@@ -165,7 +158,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
 
             Assert.That(result.IsSuccess, Is.False);
             Assert.That(result.IsFailure, Is.True);
-            Assert.That(result.Error, Is.EqualTo(ContractResults.OperationErrorCode.OrderNotFound));
+            Assert.That(result.Error, Is.EqualTo(OperationErrorCode.OrderNotFound));
         }
 
         [Test]
@@ -272,7 +265,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             Assert.That(changeResult.IsSuccess, Is.True);
             Assert.That(changeResult.Value!.DeliveryAddress, Is.EqualTo(updatedAddress));
             Assert.That(failedChangeResult.IsSuccess, Is.False);
-            Assert.That(failedChangeResult.Error, Is.EqualTo(ContractResults.OperationErrorCode.CannotChangeAddressInCurrentState));
+            Assert.That(failedChangeResult.Error, Is.EqualTo(OperationErrorCode.CannotChangeAddressInCurrentState));
         }
 
         [Test]
@@ -326,7 +319,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             var orderResult = service.GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(result.IsSuccess, Is.False);
-            Assert.That(result.Error, Is.EqualTo(ContractResults.OperationErrorCode.InvalidIngredient));
+            Assert.That(result.Error, Is.EqualTo(OperationErrorCode.InvalidIngredient));
             Assert.That(orderResult.IsSuccess, Is.True);
             Assert.That(orderResult.Value!.Pancakes, Is.Empty);
         }
@@ -354,7 +347,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             Assert.That(duringCommandResult.IsSuccess, Is.True);
             Assert.That(duringCommandResult.Value!.Status, Is.EqualTo(OrderStatusDto.Preparing));
 
-            delivery.Release(orderId, CoreResults.Result.Success());
+            delivery.Release(orderId, Result.Success());
 
             var commandResult = await completePreparationTask.WaitAsync(TestTimeout);
             var afterCommandResult = service.GetOrder(new GetOrderRequest(orderId));
@@ -372,7 +365,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
         [Property("Design", "SDD-6.4")]
         public async Task GetOrder_AfterFailedCommandThatMutatedOrder_ReturnsUpdatedSnapshot()
         {
-            var delivery = new DeliveryGatewayFake(_ => Task.FromResult(CoreResults.Result.Failure(CoreResults.ErrorCode.DeliveryFailed)));
+            var delivery = new DeliveryGatewayFake(_ => Task.FromResult(Result.Failure(ErrorCode.DeliveryFailed)));
             var applicationService = CreateApplicationService(deliveryGateway: delivery);
             var service = CreateService(applicationService);
             var orderId = await CreatePreparingOrderAsync(applicationService, service);
@@ -381,7 +374,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             var getResult = service.GetOrder(new GetOrderRequest(orderId));
 
             Assert.That(commandResult.IsSuccess, Is.False);
-            Assert.That(commandResult.Error, Is.EqualTo(CoreResults.ErrorCode.DeliveryFailed));
+            Assert.That(commandResult.Error, Is.EqualTo(ErrorCode.DeliveryFailed));
             Assert.That(getResult.IsSuccess, Is.True);
             Assert.That(getResult.Value!.Status, Is.EqualTo(OrderStatusDto.Prepared));
         }
@@ -479,7 +472,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             var method = typeof(IOrderQueryService).GetMethod(nameof(IOrderQueryService.GetOrder));
 
             Assert.That(method, Is.Not.Null);
-            Assert.That(method!.ReturnType, Is.EqualTo(typeof(ContractResults.OperationResult<OrderDto>)));
+            Assert.That(method!.ReturnType, Is.EqualTo(typeof(OperationResult<OrderDto>)));
             Assert.That(typeof(Task).IsAssignableFrom(method.ReturnType), Is.False);
             Assert.That(typeof(IOrderQueryService).IsAssignableFrom(typeof(IPancakeOrderingService)), Is.True);
         }
@@ -488,21 +481,31 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
 
         private static OrderApplicationService CreateApplicationService(
             IKitchenGateway? kitchenGateway = null,
+            IIngredientAvailability? ingredientAvailability = null,
             IDeliveryGateway? deliveryGateway = null,
             IArchiveGateway? archiveGateway = null)
         {
+            var snapshotStore = new OrderSnapshotStore();
+
             return new OrderApplicationService(
                 kitchenGateway ?? new KitchenGatewayFake(),
                 deliveryGateway ?? new DeliveryGatewayFake(),
                 archiveGateway ?? new ArchiveGatewayFake(),
-                new IngredientAvailabilityFake());
+                ingredientAvailability ?? new IngredientAvailabilityFake(),
+                snapshotStore);
         }
 
-        private static IPancakeOrderingService CreateService(IKitchenGateway? kitchenGateway = null) =>
-            CreateService(CreateApplicationService(kitchenGateway));
+        private static IPancakeOrderingService CreateService(
+            IKitchenGateway? kitchenGateway = null,
+            IIngredientAvailability? ingredientAvailability = null) =>
+            CreateService(CreateApplicationService(
+                kitchenGateway,
+                ingredientAvailability));
 
         private static IPancakeOrderingService CreateService(OrderApplicationService applicationService) =>
-            new PancakeOrderingService(applicationService);
+            new PancakeOrderingService(
+                applicationService,
+                new OrderQueryService(applicationService.SnapshotStore));
 
         private static DeliveryAddressDto CreateAddress() =>
             new("Main Street", "Tel Aviv", "Israel");
@@ -613,28 +616,28 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
 
             public int CallCount => _calls.Count;
 
-            public Task<CoreResults.Result> AcceptOrderAsync(Guid orderId)
+            public Task<Result> AcceptOrderAsync(Guid orderId)
             {
                 _calls.Enqueue(orderId);
-                return Task.FromResult(CoreResults.Result.Success());
+                return Task.FromResult(Result.Success());
             }
         }
 
         private sealed class IngredientAvailabilityFake : IIngredientAvailability
         {
-            private readonly CoreResults.Result _result;
+            private readonly Result _result;
 
-            public IngredientAvailabilityFake(CoreResults.Result? result = null)
+            public IngredientAvailabilityFake(Result? result = null)
             {
-                _result = result ?? CoreResults.Result.Success();
+                _result = result ?? Result.Success();
             }
 
             public int CallCount { get; private set; }
 
-            public Task<CoreResults.Result> CheckAvailabilityAsync(IReadOnlyCollection<IngredientTypeDto> ingredients) =>
+            public Task<Result> CheckAvailabilityAsync(IReadOnlyCollection<IngredientTypeDto> ingredients) =>
                 Task.FromResult(CheckAvailability());
 
-            private CoreResults.Result CheckAvailability()
+            private Result CheckAvailability()
             {
                 CallCount++;
                 return _result;
@@ -643,31 +646,31 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
 
         private sealed class DeliveryGatewayFake : IDeliveryGateway
         {
-            private readonly Func<Guid, Task<CoreResults.Result>> _submitOrder;
+            private readonly Func<Guid, Task<Result>> _submitOrder;
 
-            public DeliveryGatewayFake(Func<Guid, Task<CoreResults.Result>>? submitOrder = null)
+            public DeliveryGatewayFake(Func<Guid, Task<Result>>? submitOrder = null)
             {
-                _submitOrder = submitOrder ?? (_ => Task.FromResult(CoreResults.Result.Success()));
+                _submitOrder = submitOrder ?? (_ => Task.FromResult(Result.Success()));
             }
 
-            public Task<CoreResults.Result> SubmitOrderAsync(Guid orderId) =>
+            public Task<Result> SubmitOrderAsync(Guid orderId) =>
                 _submitOrder(orderId);
         }
 
         private sealed class ArchiveGatewayFake : IArchiveGateway
         {
-            public Task<CoreResults.Result> ArchiveOrderAsync(Guid orderId) =>
-                Task.FromResult(CoreResults.Result.Success());
+            public Task<Result> ArchiveOrderAsync(Guid orderId) =>
+                Task.FromResult(Result.Success());
         }
 
         private sealed class ControlledDeliveryGateway : IDeliveryGateway
         {
             private readonly ConcurrentDictionary<Guid, TaskCompletionSource<bool>> _enteredSignals = new();
-            private readonly ConcurrentDictionary<Guid, TaskCompletionSource<CoreResults.Result>> _blockedOrders = new();
+            private readonly ConcurrentDictionary<Guid, TaskCompletionSource<Result>> _blockedOrders = new();
 
             public void Block(Guid orderId)
             {
-                _blockedOrders[orderId] = NewCompletionSource<CoreResults.Result>();
+                _blockedOrders[orderId] = NewCompletionSource<Result>();
             }
 
             public async Task WaitUntilEnteredAsync(Guid orderId)
@@ -676,12 +679,12 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
                 await signal.Task.WaitAsync(TestTimeout);
             }
 
-            public void Release(Guid orderId, CoreResults.Result result)
+            public void Release(Guid orderId, Result result)
             {
                 _blockedOrders[orderId].SetResult(result);
             }
 
-            public Task<CoreResults.Result> SubmitOrderAsync(Guid orderId)
+            public Task<Result> SubmitOrderAsync(Guid orderId)
             {
                 _enteredSignals
                     .GetOrAdd(orderId, _ => NewCompletionSource<bool>())
@@ -689,7 +692,7 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
 
                 return _blockedOrders.TryGetValue(orderId, out var release)
                     ? release.Task
-                    : Task.FromResult(CoreResults.Result.Success());
+                    : Task.FromResult(Result.Success());
             }
 
             private static TaskCompletionSource<T> NewCompletionSource<T>() =>

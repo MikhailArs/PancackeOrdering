@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using PancakeOrdering.Application;
+using PancakeOrdering.Application.Orders.Snapshots;
 using PancakeOrdering.Application.Ports;
 using PancakeOrdering.Contracts.Dtos;
 using PancakeOrdering.Contracts.Requests;
@@ -502,12 +503,17 @@ namespace PancakeOrdering.Application.Tests.Application.Orders
             IKitchenGateway? kitchenGateway = null,
             IDeliveryGateway? deliveryGateway = null,
             IArchiveGateway? archiveGateway = null,
-            IIngredientAvailability? ingredientAvailability = null) =>
-            new(
+            IIngredientAvailability? ingredientAvailability = null)
+        {
+            var snapshotStore = new OrderSnapshotStore();
+
+            return new OrderApplicationService(
                 kitchenGateway ?? new KitchenGatewayFake(),
                 deliveryGateway ?? new DeliveryGatewayFake(),
                 archiveGateway ?? new ArchiveGatewayFake(),
-                ingredientAvailability ?? new IngredientAvailabilityFake());
+                ingredientAvailability ?? new IngredientAvailabilityFake(),
+                snapshotStore);
+        }
 
         private static DeliveryAddress CreateAddress() =>
             new("Main Street", "Tel Aviv", "Israel");
