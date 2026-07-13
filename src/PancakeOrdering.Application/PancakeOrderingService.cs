@@ -111,6 +111,31 @@ namespace PancakeOrdering.Application
                 _applicationService.ConfirmAsync(request.OrderId));
         }
 
+        public async Task<OperationResult<OrderDto>> StartPreparationAsync(Guid orderId) =>
+            await ExecuteAndProjectAsync(
+                orderId,
+                _applicationService.StartPreparationAsync(orderId));
+
+        public async Task<OperationResult<OrderDto>> CompletePreparationAsync(Guid orderId) =>
+            await ExecuteAndProjectAsync(
+                orderId,
+                _applicationService.CompletePreparationAsync(orderId));
+
+        public async Task<OperationResult<OrderDto>> StartDeliveryAsync(Guid orderId) =>
+            await ExecuteAndProjectAsync(
+                orderId,
+                _applicationService.StartDeliveryAsync(orderId));
+
+        public async Task<OperationResult<OrderDto>> CompleteDeliveryAsync(Guid orderId) =>
+            await ExecuteAndProjectAsync(
+                orderId,
+                _applicationService.CompleteDeliveryAsync(orderId));
+
+        public async Task<OperationResult<OrderDto>> ArchiveAsync(Guid orderId) =>
+            await ExecuteAndProjectAsync(
+                orderId,
+                _applicationService.ArchiveAsync(orderId));
+
         public async Task<OperationResult<OrderDto>> CancelOrderAsync(CancelOrderRequest request)
         {
             if (request == null)

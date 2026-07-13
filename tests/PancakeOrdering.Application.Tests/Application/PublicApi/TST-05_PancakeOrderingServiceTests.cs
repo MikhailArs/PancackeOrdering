@@ -477,6 +477,46 @@ namespace PancakeOrdering.Application.Tests.Application.PublicApi
             Assert.That(typeof(IOrderQueryService).IsAssignableFrom(typeof(IPancakeOrderingService)), Is.True);
         }
 
+        [Test]
+        [Property("TestId", "TST-05.22")]
+        [Property("Requirement", "FR-3")]
+        [Property("Requirement", "FR-4")]
+        [Property("Requirement", "FR-5")]
+        [Property("Requirement", "FR-6")]
+        [Property("Requirement", "NFR-2")]
+        [Property("Requirement", "NFR-3")]
+        [Property("Design", "SDD-4.8")]
+        [Property("Design", "SDD-5.3")]
+        [Property("Design", "SDD-6.4")]
+        public async Task LifecycleMethods_ReturnUpdatedOrderDtosAndReachArchived()
+        {
+            var service = CreateService();
+            var orderId = CreateOrder(service);
+
+            var addPancakeResult = await service.AddPancakeAsync(
+                new AddPancakeRequest(orderId, new[] { IngredientTypeDto.Honey }));
+            var confirmResult = await service.ConfirmOrderAsync(new ConfirmOrderRequest(orderId));
+            var startPreparationResult = await service.StartPreparationAsync(orderId);
+            var completePreparationResult = await service.CompletePreparationAsync(orderId);
+            var startDeliveryResult = await service.StartDeliveryAsync(orderId);
+            var completeDeliveryResult = await service.CompleteDeliveryAsync(orderId);
+            var archiveResult = await service.ArchiveAsync(orderId);
+
+            Assert.That(addPancakeResult.IsSuccess, Is.True);
+            Assert.That(confirmResult.IsSuccess, Is.True);
+            Assert.That(startPreparationResult.IsSuccess, Is.True);
+            Assert.That(completePreparationResult.IsSuccess, Is.True);
+            Assert.That(startDeliveryResult.IsSuccess, Is.True);
+            Assert.That(completeDeliveryResult.IsSuccess, Is.True);
+            Assert.That(archiveResult.IsSuccess, Is.True);
+            Assert.That(confirmResult.Value!.Status, Is.EqualTo(OrderStatusDto.Confirmed));
+            Assert.That(startPreparationResult.Value!.Status, Is.EqualTo(OrderStatusDto.Preparing));
+            Assert.That(completePreparationResult.Value!.Status, Is.EqualTo(OrderStatusDto.Prepared));
+            Assert.That(startDeliveryResult.Value!.Status, Is.EqualTo(OrderStatusDto.OutForDelivery));
+            Assert.That(completeDeliveryResult.Value!.Status, Is.EqualTo(OrderStatusDto.Delivered));
+            Assert.That(archiveResult.Value!.Status, Is.EqualTo(OrderStatusDto.Archived));
+        }
+
         private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(3);
 
         private static OrderApplicationService CreateApplicationService(

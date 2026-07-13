@@ -21,5 +21,15 @@ public interface IPancakeOrderingService :
 
     Task<OperationResult<OrderDto>> ConfirmOrderAsync(ConfirmOrderRequest request);
 
+    Task<OperationResult<OrderDto>> StartPreparationAsync(Guid orderId);
+
+    Task<OperationResult<OrderDto>> CompletePreparationAsync(Guid orderId);
+
+    Task<OperationResult<OrderDto>> StartDeliveryAsync(Guid orderId);
+
+    Task<OperationResult<OrderDto>> CompleteDeliveryAsync(Guid orderId);
+
+    Task<OperationResult<OrderDto>> ArchiveAsync(Guid orderId);
+
     Task<OperationResult<OrderDto>> CancelOrderAsync(CancelOrderRequest request);
 }

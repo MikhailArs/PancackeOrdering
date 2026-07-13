@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PancakeOrdering.Application\PancakeOrdering.Application.csproj" />
     <ProjectReference Include="..\PancakeOrdering.Contracts\PancakeOrdering.Contracts.csproj" />
     <ProjectReference Include="..\PancakeOrdering.Infrastructure\PancakeOrdering.Infrastructure.csproj" />
   </ItemGroup>

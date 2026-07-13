@@ -23,6 +23,12 @@ await AddPancake(pancakeService, orderId, [IngredientTypeDto.Honey]);
 await AddPancake(pancakeService, orderId, [IngredientTypeDto.Chocolate, IngredientTypeDto.Jam]);
 await ConfirmOrder(pancakeService, orderId);
 
+await RunOrderOperation("Start preparation", pancakeService.StartPreparationAsync(orderId));
+await RunOrderOperation("Complete preparation", pancakeService.CompletePreparationAsync(orderId));
+await RunOrderOperation("Start delivery", pancakeService.StartDeliveryAsync(orderId));
+await RunOrderOperation("Complete delivery", pancakeService.CompleteDeliveryAsync(orderId));
+await RunOrderOperation("Archive order", pancakeService.ArchiveAsync(orderId));
+
 Console.WriteLine("Press any key to exit");
 Console.ReadLine();
 
@@ -71,6 +77,20 @@ static async Task ConfirmOrder(IPancakeOrderingService service, Guid orderId)
     Console.WriteLine("Contains:");
     Console.WriteLine($"{PrintPancakes(confirm.Value!.Pancakes.ToArray())}");
     Console.WriteLine($"Order status: {confirm.Value.Status}");
+}
+
+static async Task RunOrderOperation(string operation, Task<OperationResult<OrderDto>> operationTask)
+{
+    OperationResult<OrderDto> result = await operationTask;
+
+    Console.WriteLine($"{operation} status - Is Success: {result.IsSuccess}");
+    if (result.IsFailure)
+    {
+        Console.WriteLine($"Error: {result.Error}\n");
+        Terminate();
+    }
+
+    Console.WriteLine($"Order status: {result.Value!.Status}\n");
 }
 
 static string PrintPancakes(PancakeDto[] pancakes)

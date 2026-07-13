@@ -8,17 +8,17 @@ Requirement IDs are taken from `docs/PancakeOrdering_Requirements.md`. The requi
 | ----------- | ------------------- | ------ | ----- | -------- |
 | FR-1 | Create an Order with a valid Delivery Address | SDD-3.1, SDD-4.8, SDD-4.9, SDD-4.11, SDD-6.2 | TST-04.01, TST-04.06, TST-05.05, TST-06.09 | Covered |
 | FR-2 | Change Delivery Address before cancelled or confirmed | SDD-4.8, SDD-5.2 | TST-05.11 | Covered |
-| FR-3 | Confirm an Order that contains at least one Pancake | SDD-4.8, SDD-5.2, SDD-6.4, SDD-6.8.3 | TST-04.03, TST-04.04, TST-04.05, TST-04.06, TST-05.12, TST-06.04, TST-06.06, TST-06.09 | Covered |
-| FR-4 | Submit confirmed Order to Kitchen for preparation | SDD-4.11, SDD-6.4, SDD-6.8.3 | TST-04.03, TST-04.05, TST-04.06, TST-05.12, TST-06.03, TST-06.04, TST-06.05, TST-06.06, TST-06.07, TST-06.08, TST-06.09 | Covered |
-| FR-5 | Submit Order for delivery after Kitchen preparation | SDD-4.2, SDD-4.11, SDD-5.3, SDD-6.4 | TST-04.06, TST-04.07, TST-04.08, TST-04.09, TST-04.10, TST-04.11, TST-05.15, TST-05.16, TST-06.09 | Covered |
-| FR-6 | Archive Order after delivery | SDD-4.2, SDD-5.3, SDD-6.4 | TST-04.06, TST-04.12, TST-04.13, TST-04.14, TST-04.15, TST-04.16, TST-06.09 | Covered |
+| FR-3 | Confirm an Order that contains at least one Pancake | SDD-4.8, SDD-5.2, SDD-6.4, SDD-6.8.3 | TST-04.03, TST-04.04, TST-04.05, TST-04.06, TST-05.12, TST-05.22, TST-06.04, TST-06.06, TST-06.09 | Covered |
+| FR-4 | Submit confirmed Order to Kitchen for preparation | SDD-4.11, SDD-6.4, SDD-6.8.3 | TST-04.03, TST-04.05, TST-04.06, TST-05.12, TST-05.22, TST-06.03, TST-06.04, TST-06.05, TST-06.06, TST-06.07, TST-06.08, TST-06.09 | Covered |
+| FR-5 | Submit Order for delivery after Kitchen preparation | SDD-4.2, SDD-4.11, SDD-5.3, SDD-6.4 | TST-04.06, TST-04.07, TST-04.08, TST-04.09, TST-04.10, TST-04.11, TST-05.15, TST-05.16, TST-05.22, TST-06.09 | Covered |
+| FR-6 | Archive Order after delivery | SDD-4.2, SDD-5.3, SDD-6.4 | TST-04.06, TST-04.12, TST-04.13, TST-04.14, TST-04.15, TST-04.16, TST-05.22, TST-06.09 | Covered |
 | FR-7 | Cancel Order before Kitchen preparation starts | SDD-4.8, SDD-5.3 | TST-05.13 | Covered |
 | FR-8 | Add Pancakes before cancelled or confirmed | SDD-4.8, SDD-4.9, SDD-6.8.2 | TST-05.07, TST-05.08, TST-05.09, TST-06.01, TST-06.02, TST-06.10 | Covered |
 | FR-9 | Add or remove Ingredients before confirmed or cancelled | SDD-3.3, SDD-4.8, SDD-4.11, SDD-6.4, SDD-6.8.2 | TST-05.08, TST-05.10, TST-05.17, TST-06.01, TST-06.02, TST-06.10 | Covered |
 | FR-10 | Verify Ingredient availability | SDD-3.3, SDD-4.11, SDD-6.7, SDD-6.8.2, SDD-6.8.3 | TST-05.02, TST-05.03, TST-05.04, TST-06.01, TST-06.02, TST-06.04, TST-06.05, TST-06.06, TST-06.07, TST-06.08, TST-06.09, TST-06.10 | Covered |
 | NFR-1 | Written in Java or C# | None | None | Not Applicable |
-| NFR-2 | Expose API as Java or C# method calls | SDD-4.8, SDD-4.9, SDD-4.11 | TST-05.05, TST-05.06, TST-05.15, TST-05.21 | Covered |
-| NFR-3 | Do not expose internal domain objects via API | SDD-2, SDD-4.1, SDD-4.7, SDD-4.9, SDD-4.11 | TST-05.01, TST-05.03, TST-05.05, TST-05.07, TST-05.08, TST-05.17, TST-05.18, TST-05.19, TST-05.20, TST-06.03 | Covered |
+| NFR-2 | Expose API as Java or C# method calls | SDD-4.8, SDD-4.9, SDD-4.11 | TST-05.05, TST-05.06, TST-05.15, TST-05.21, TST-05.22 | Covered |
+| NFR-3 | Do not expose internal domain objects via API | SDD-2, SDD-4.1, SDD-4.7, SDD-4.9, SDD-4.11 | TST-05.01, TST-05.03, TST-05.05, TST-05.07, TST-05.08, TST-05.17, TST-05.18, TST-05.19, TST-05.20, TST-05.22, TST-06.03 | Covered |
 | NFR-4 | Do not throw exceptions | SDD-4.5, SDD-4.6 | TST-03.02, TST-04.02, TST-05.06, TST-05.14 | Covered |
 | NFR-5 | Avoid undefined behavior from race conditions | SDD-4.3, SDD-6.1, SDD-6.3, SDD-6.4, SDD-6.5, SDD-6.7, SDD-7.2.2 | TST-03.01, TST-03.02, TST-04.06, TST-04.10, TST-04.16, TST-04.17, TST-04.18, TST-04.19, TST-05.15, TST-05.16, TST-05.17, TST-06.08 | Covered |
 | NFR-6 | Follow OOP and SOLID principles for future adaptation | SDD-2, SDD-4.7 | TST-05.01 | Covered |
@@ -79,7 +79,7 @@ Requirement IDs are taken from `docs/PancakeOrdering_Requirements.md`. The requi
 | TST-04.18 | DifferentOrders_ExecuteConcurrently | TST-04 | NFR-5 | SDD-6.5 |
 | TST-04.19 | CompetingCustomerAndKitchenCommands_FollowEnqueueOrder | TST-04 | NFR-5 | SDD-6.1, SDD-6.4, SDD-7.2.2 |
 | TST-05.01 | ProjectReferences_FollowRequiredDependencyDirection | TST-05 | NFR-3, NFR-6 | SDD-2, SDD-4.7 |
-| TST-05.02 | PublicConstructor_RequiresExplicitIngredientAvailability | TST-05 | FR-10 | SDD-6.8.2 |
+| TST-05.02 | PublicConstructor_DoesNotComposeApplicationPorts | TST-05 | FR-10 | SDD-6.8.2 |
 | TST-05.03 | KitchenGateway_DoesNotNeedToImplementIngredientAvailability | TST-05 | FR-10, NFR-3 | SDD-4.11, SDD-6.8.2 |
 | TST-05.04 | AvailabilityFailure_IsRespectedBeforeDraftMutation | TST-05 | FR-10 | SDD-6.8.2 |
 | TST-05.05 | CreateOrder_ReturnsDraftOrderDtoAndGetOrderReturnsSameOrder | TST-05 | FR-1, NFR-2, NFR-3 | SDD-4.8, SDD-4.9, SDD-4.11, SDD-6.2 |
@@ -99,6 +99,7 @@ Requirement IDs are taken from `docs/PancakeOrdering_Requirements.md`. The requi
 | TST-05.19 | ApplicationSnapshotQuery_DoesNotReturnMutableOrder | TST-05 | NFR-3 | SDD-4.11 |
 | TST-05.20 | PublicContractsGraph_DoesNotExposeCoreTypes | TST-05 | NFR-3 | SDD-4.1, SDD-4.9 |
 | TST-05.21 | GetOrder_IsSynchronous | TST-05 | NFR-2 | SDD-4.8, SDD-4.11 |
+| TST-05.22 | LifecycleMethods_ReturnUpdatedOrderDtosAndReachArchived | TST-05 | FR-3, FR-4, FR-5, FR-6, NFR-2, NFR-3 | SDD-4.8, SDD-5.3, SDD-6.4 |
 | TST-06.01 | DraftAvailability_DoesNotConsumeStock | TST-06 | FR-8, FR-9, FR-10 | SDD-3.3, SDD-6.8.2 |
 | TST-06.02 | UnavailableIngredient_PreventsDraftModification | TST-06 | FR-8, FR-9, FR-10 | SDD-3.3, SDD-6.8.2 |
 | TST-06.03 | AcceptOrder_PullsOrderDtoByOrderId | TST-06 | FR-4, NFR-3 | SDD-4.11, SDD-6.8.3 |

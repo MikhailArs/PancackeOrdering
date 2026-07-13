@@ -16,7 +16,7 @@ The solution follows a Clean Architecture structure:
 - Core contains Domain logic only and has no reference to Contracts or Application.
 - Application references Contracts and Core. It owns use cases, per-order command queues, ports, the public method-call facade, and mapping between Contracts and Domain.
 - Infrastructure implements external adapters when required. The current Infrastructure adapter is an in-memory Kitchen.
-- Host is the console demonstration composition root. It references Contracts, Application, and Infrastructure, and does not reference Core.
+- Host is the console demonstration composition root. It references Contracts and Infrastructure, and does not reference Core.
 - Tests verify domain rules, application flows, and concurrency behavior.
 - Demo may provide a simple executable example of the service.
 
@@ -78,6 +78,8 @@ It exposes Customer operations:
 - RemoveIngredientAsync
 - ConfirmOrderAsync
 - CancelOrderAsync
+
+Lifecycle operations for preparation, delivery, and archiving are also exposed on IPancakeOrderingService for integration and console demonstration purposes: StartPreparationAsync, CompletePreparationAsync, StartDeliveryAsync, CompleteDeliveryAsync, and ArchiveAsync.
 
 SDD-4.9 Public callers use only request models, DTOs, primitive identifiers, public enums, OperationResult/OperationResult<T>, and OperationErrorCode from Contracts.
 Domain objects such as Order, Pancake, DeliveryAddress, Ingredient, and state types do not leave Core.
